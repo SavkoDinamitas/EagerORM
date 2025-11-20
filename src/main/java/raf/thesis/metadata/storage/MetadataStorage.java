@@ -9,7 +9,7 @@ public class MetadataStorage {
     private static final Map<Class<?>, EntityMetadata> ENTITIES = new HashMap<>();
 
     public static void register(EntityMetadata metadata) {
-        ENTITIES.put(metadata.getClass(), metadata);
+        ENTITIES.put(metadata.getEntityClass(), metadata);
     }
     public static EntityMetadata get(Class<?> clazz) {
         return ENTITIES.get(clazz);
