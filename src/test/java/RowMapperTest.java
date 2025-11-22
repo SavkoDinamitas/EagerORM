@@ -143,4 +143,31 @@ public class RowMapperTest {
             assertTrue(found, "Expected warning not found");
         }
     }
+
+    @Test
+    void testMapperMapsMultipleRowsCorrectly() throws SQLException {
+        RowMapper rowMapper = new DefaultMapperImplementation();
+        String sql = "SELECT id, name, email, age FROM users";
+
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(sql)) {
+
+            // Use your mapper to convert the ResultSet row to an object
+            List<User> users = rowMapper.mapList(rs, User.class);
+
+            // Assert that the mapped object fields are correct
+            assertEquals(1, users.getFirst().getId());
+            assertEquals("Alice", users.getFirst().getName());
+            assertEquals("alice@example.com", users.getFirst().getEmail());
+            assertEquals(21, users.getFirst().getAge());
+
+            assertEquals(2, users.get(1).getId());
+            assertEquals("Bob", users.get(1).getName());
+            assertEquals("bob@example.com", users.get(1).getEmail());
+            assertEquals(25, users.get(1).getAge());
+
+            // Ensure no more rows exist
+            assertFalse(rs.next(), "ResultSet is not entirely mapped.");
+        }
+    }
 }

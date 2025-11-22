@@ -13,13 +13,34 @@ import raf.thesis.metadata.storage.MetadataStorage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DefaultMapperImplementation implements RowMapper {
     private static final Logger log = LoggerFactory.getLogger(DefaultMapperImplementation.class);
+
     @Override
     public <T> T map(ResultSet rs, Class<T> clazz) {
+        return singleRowMap(rs, clazz);
+    }
+
+    @Override
+    public <T> List<T> mapList(ResultSet rs, Class<T> clazz) {
+        List<T> instances = new ArrayList<>();
+        try {
+            while (rs.next()) {
+                instances.add(singleRowMap(rs, clazz));
+            }
+        } catch (SQLException e) {
+            throw new ResultSetAccessException(e);
+        }
+        return instances;
+    }
+
+
+    private <T> T singleRowMap(ResultSet rs, Class<T> clazz) {
         EntityMetadata entityMetadata = MetadataStorage.get(clazz);
 
         if (entityMetadata == null) {
@@ -29,9 +50,13 @@ public class DefaultMapperImplementation implements RowMapper {
 
         //for each column in result set, find the designated field
         // and do the conversion to java datatype
-        try{
-            T instance = clazz.getDeclaredConstructor().newInstance();
-
+        T instance;
+        try {
+            instance = clazz.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new ClassInstantiationException(e);
+        }
+        try {
             ResultSetMetaData rsMeta = rs.getMetaData();
             int columnCount = rsMeta.getColumnCount();
 
@@ -55,14 +80,10 @@ public class DefaultMapperImplementation implements RowMapper {
             }
 
             return instance;
-        }catch (SQLException  e) {
-            throw new ResultSetAccessException(e.getMessage());
-        }
-        catch(IllegalAccessException | InvocationTargetException e){
-            throw new TypeConversionException(e.getMessage());
-        }
-        catch (Exception e){
-            throw new ClassInstantiationException(e.getMessage());
+        } catch (SQLException e) {
+            throw new ResultSetAccessException(e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new TypeConversionException(e);
         }
     }
 
