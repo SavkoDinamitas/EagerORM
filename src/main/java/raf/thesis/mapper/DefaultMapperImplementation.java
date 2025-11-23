@@ -45,6 +45,9 @@ public class DefaultMapperImplementation implements RowMapper {
     @Override
     public <T> List<T> mapWithRelations(ResultSet rs, Class<T> clazz) {
         Map<List<Object>, Object> madeObjects = new HashMap<>();
+        //linked hash set to preserve order from DB
+        Set<Object> returningObjects = new LinkedHashSet<>();
+        Set<List<Object>> relationDeduplication = new HashSet<>();
         try {
             while (rs.next()) {
                 ResultSetMetaData rsMeta = rs.getMetaData();
@@ -69,32 +72,35 @@ public class DefaultMapperImplementation implements RowMapper {
                 }
                 //deduplicating objects by inserting in madeObjects map
                 for (var entry : rowInstances.entrySet()) {
-                    madeObjects.putIfAbsent(List.of(entry.getKey(), getPrimaryKey(entry.getValue())), entry.getValue());
+                    madeObjects.putIfAbsent(getPrimaryKey(entry.getValue()), entry.getValue());
                 }
                 //solve relations
                 for (var freshObjectEntry : rowInstances.entrySet()) {
                     List<String> path = Arrays.stream(freshObjectEntry.getKey().split("\\.")).collect(Collectors.toList());
+                    //these are original object required to return
                     if (path.size() == 1) {
+                        returningObjects.add(madeObjects.get(getPrimaryKey(freshObjectEntry.getValue())));
                         continue;
                     }
-                    List<Object> myKey = List.of(freshObjectEntry.getKey(), getPrimaryKey(freshObjectEntry.getValue()));
+                    List<Object> myKey = getPrimaryKey(freshObjectEntry.getValue());
                     String relation = path.getLast();
                     path.removeLast();
                     String joinedPath = String.join(".", path);
-                    List<Object> parentKey = List.of(joinedPath, getPrimaryKey(rowInstances.get(joinedPath)));
-                    solveRelations(madeObjects.get(parentKey), madeObjects.get(myKey), relation);
+                    List<Object> parentKey = getPrimaryKey(rowInstances.get(joinedPath));
+                    Object parent = madeObjects.get(parentKey);
+                    Object child = madeObjects.get(myKey);
+                    //relation deduplication
+                    if (relationDeduplication.add(List.of(parent, child, relation))) {
+                        solveRelations(parent, child, relation);
+                    }
+
                 }
 
             }
             List<T> instances = new ArrayList<>();
-            for (var entry : madeObjects.entrySet()) {
-                if (((String) entry.getKey().getFirst()).split("\\.").length == 1) {
-                    if(clazz.isInstance(entry.getValue())) {
-                        instances.add((T) entry.getValue());
-                    }
-                    else{
-                        throw new AssertionError("Root instance is not same as given clazz");
-                    }
+            for (var entry : returningObjects) {
+                if (clazz.isInstance(entry)) {
+                    instances.add((T) entry);
                 }
             }
             return instances;
