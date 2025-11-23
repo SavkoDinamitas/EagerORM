@@ -7,4 +7,6 @@ public interface RowMapper {
     <T> T map(ResultSet rs, Class<T> clazz);
 
     <T> List<T> mapList(ResultSet rs, Class<T> clazz);
+
+    <T> List<T> mapWithRelations(ResultSet rs, Class<T> clazz);
 }

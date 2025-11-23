@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DefaultMapperImplementation implements RowMapper {
     private static final Logger log = LoggerFactory.getLogger(DefaultMapperImplementation.class);
@@ -41,6 +42,7 @@ public class DefaultMapperImplementation implements RowMapper {
     //result set is in specific format that my query builder will make
     //for each row, i should make instances of objects by navigating through relations to find the right one
     //for each object, i need to handle duplicates by putting them in map with list of path, .class and PK as key
+    @Override
     public <T> List<T> mapWithRelations(ResultSet rs, Class<T> clazz) {
         Map<List<Object>, Object> madeObjects = new HashMap<>();
         try {
@@ -51,7 +53,8 @@ public class DefaultMapperImplementation implements RowMapper {
                 Map<String, Object> rowInstances = new HashMap<>();
                 for (int i = 1; i <= columnCount; i++) {
                     String columnName = rsMeta.getColumnLabel(i);
-                    List<String> path = Arrays.stream(columnName.split("\\.")).toList();
+                    List<String> path = Arrays.stream(columnName.split("\\."))
+                            .collect(Collectors.toList());
                     String fieldName = path.getLast();
                     path.removeLast();
                     String joinedPath = String.join(".", path);
@@ -70,14 +73,15 @@ public class DefaultMapperImplementation implements RowMapper {
                 }
                 //solve relations
                 for (var freshObjectEntry : rowInstances.entrySet()) {
-                    List<String> path = Arrays.stream(freshObjectEntry.getKey().split("\\.")).toList();
+                    List<String> path = Arrays.stream(freshObjectEntry.getKey().split("\\.")).collect(Collectors.toList());
                     if (path.size() == 1) {
                         continue;
                     }
                     List<Object> myKey = List.of(freshObjectEntry.getKey(), getPrimaryKey(freshObjectEntry.getValue()));
                     String relation = path.getLast();
                     path.removeLast();
-                    List<Object> parentKey = List.of(path, getPrimaryKey(rowInstances.get(String.join(".", path))));
+                    String joinedPath = String.join(".", path);
+                    List<Object> parentKey = List.of(joinedPath, getPrimaryKey(rowInstances.get(joinedPath)));
                     solveRelations(madeObjects.get(parentKey), madeObjects.get(myKey), relation);
                 }
 
@@ -85,7 +89,12 @@ public class DefaultMapperImplementation implements RowMapper {
             List<T> instances = new ArrayList<>();
             for (var entry : madeObjects.entrySet()) {
                 if (((String) entry.getKey().getFirst()).split("\\.").length == 1) {
-                    instances.add((T) entry.getValue());
+                    if(clazz.isInstance(entry.getValue())) {
+                        instances.add((T) entry.getValue());
+                    }
+                    else{
+                        throw new AssertionError("Root instance is not same as given clazz");
+                    }
                 }
             }
             return instances;
@@ -111,7 +120,9 @@ public class DefaultMapperImplementation implements RowMapper {
                 fk.setAccessible(true);
                 Object listObject = fk.get(parent);
                 if (listObject == null) {
-                    fk.set(parent, List.of(child));
+                    List newList = new ArrayList<>();
+                    newList.add(child);
+                    fk.set(parent, newList);
                 } else {
                     ((List) listObject).add(child);
                 }
