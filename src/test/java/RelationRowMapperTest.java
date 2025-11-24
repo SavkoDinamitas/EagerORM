@@ -13,8 +13,10 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RelationRowMapperTest {
@@ -66,6 +68,36 @@ public class RelationRowMapperTest {
             assertEquals("Alexander", employees.get(1).getFirst_name());
             assertEquals("Hunold", employees.get(1).getLast_name());
             assertEquals(LocalDate.of(2006, 1, 3), employees.get(1).getHire_date());
+        }
+    }
+
+    @Test
+    void testOuterJoinRelationRowMapper() throws SQLException {
+        String sql = HrScheme.OUTERJOIN;
+
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(sql)) {
+
+            //map result set of single join query
+            List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
+            // Check if a row was returned
+            assertFalse(departments.isEmpty());
+            //build how objects should look like
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+            Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+            Department Administration = new Department(10, "Administration");
+            Department Marketing = new Department(20, "Marketing");
+            Department Purchasing = new Department(30, "Purchasing");
+            Department HR = new Department(40, "Human Resources");
+            Administration.setEmployees(List.of(Steven));
+            Marketing.setEmployees(List.of(Neena, Bruce));
+            Purchasing.setEmployees(List.of(Lex, Alexander));
+            List<Department> expected = List.of(Administration, Marketing, Purchasing, HR);
+            //assertJ recursive comparison
+            assertThat(departments).usingRecursiveComparison().isEqualTo(expected);
         }
     }
 

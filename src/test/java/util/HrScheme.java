@@ -29,6 +29,19 @@ public class HrScheme {
             WHERE d.department_id = 30;
             """;
     @Language("SQL")
+    public static String OUTERJOIN = """
+            SELECT
+                d.department_id AS "departments.department_id",
+                d.department_name AS "departments.department_name",
+                e.employee_id AS "departments.employees.employee_id",
+                e.first_name AS "departments.employees.first_name",
+                e.last_name AS "departments.employees.last_name",
+                e.hire_date AS "departments.employees.hire_date"
+            FROM departments d
+            LEFT OUTER JOIN employees e
+                ON d.department_id = e.department_id;
+            """;
+    @Language("SQL")
     public static String RECURSIVEMULTIJOIN = """
             SELECT
                 e.employee_id AS "employees.employee_id",
