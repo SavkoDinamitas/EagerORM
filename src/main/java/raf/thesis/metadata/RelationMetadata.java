@@ -13,4 +13,12 @@ public class RelationMetadata {
     String relationName;
     RelationType relationType;
     Class<?> foreignClass;
+    String foreignRelationName;
+
+    public RelationMetadata(Field foreignField, String relationName, RelationType relationType, Class<?> foreignClass) {
+        this.foreignField = foreignField;
+        this.relationName = relationName;
+        this.relationType = relationType;
+        this.foreignClass = foreignClass;
+    }
 }

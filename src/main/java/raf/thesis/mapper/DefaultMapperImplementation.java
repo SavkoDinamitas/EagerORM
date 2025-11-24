@@ -142,6 +142,10 @@ public class DefaultMapperImplementation implements RowMapper {
                 } else {
                     ((List) listObject).add(child);
                 }
+                //fill both sides if foreignRelation is present
+                /*if(relation.getForeignRelationName() != null) {
+                    solveRelations(child, parent, relation.getForeignRelationName());
+                }*/
             } else {
                 Field fk = relation.getForeignField();
                 fk.setAccessible(true);
