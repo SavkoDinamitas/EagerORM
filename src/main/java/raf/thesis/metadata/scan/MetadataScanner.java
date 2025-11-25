@@ -1,11 +1,9 @@
 package raf.thesis.metadata.scan;
 
 import org.reflections.Reflections;
-import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.scanners.Scanners;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 import raf.thesis.metadata.ColumnMetadata;
 import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.RelationMetadata;
@@ -34,11 +32,15 @@ public class MetadataScanner {
         }
 
         //initialize reflections scanner
-        ConfigurationBuilder builder = new ConfigurationBuilder();
-        for (String basePackage : basePackages) {
-            builder.addUrls(ClasspathHelper.forPackage(basePackage));
+        ConfigurationBuilder builder = new ConfigurationBuilder().forPackages(basePackages).setScanners(Scanners.TypesAnnotated);
+        FilterBuilder filter = new FilterBuilder();
+        builder.setScanners(Scanners.TypesAnnotated);
+        builder.forPackages(basePackages);
+        for (String pcg : basePackages) {
+            filter.includePackage(pcg);
         }
-        builder.setScanners(Scanners.values());
+        builder.filterInputsBy(filter);
+
 
         Reflections reflections = new Reflections(builder);
 
