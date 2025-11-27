@@ -54,7 +54,7 @@ public class MetadataScanner {
         //check if all relations are valid
         for (var relation : madeRelations) {
             if (!MetadataStorage.contains(relation.getForeignClass())) {
-                throw new UnsupportedRelationException("Class " + relation.getForeignClass().getName() + " inside " + relation.getForeignRelationName() + " is not an Entity");
+                throw new UnsupportedRelationException("Class " + relation.getForeignClass().getName() + " inside relation '" + relation.getRelationName() + "' is not an Entity");
             }
         }
 
@@ -70,7 +70,7 @@ public class MetadataScanner {
 
         EntityMetadata meta = new EntityMetadata();
         assert entityAnn != null;
-        if (entityAnn.tableName() == null) {
+        if (entityAnn.tableName().isEmpty()) {
             throw new RequiredFieldException("Entity " + clazz.getSimpleName() + " requires table name");
         }
         meta.setTableName(entityAnn.tableName());
