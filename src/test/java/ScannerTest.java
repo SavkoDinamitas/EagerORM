@@ -3,11 +3,17 @@ import discovery.test2.Airplane;
 import discovery.test2.Crew;
 import discovery.test2.Flight;
 import discovery.test2.Pilot;
+import discovery.test8.Club;
+import discovery.test8.Player;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import raf.thesis.metadata.ColumnMetadata;
 import raf.thesis.metadata.EntityMetadata;
+import raf.thesis.metadata.exception.DuplicateRelationNamesException;
+import raf.thesis.metadata.exception.ListFieldRequiredException;
+import raf.thesis.metadata.exception.RequiredFieldException;
+import raf.thesis.metadata.exception.UnsupportedRelationException;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.metadata.storage.MetadataStorage;
 
@@ -20,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ScannerTest {
-    //TODO: multiple relations with same name, all lowercase, all exceptions, complex keys
+    //TODO: maybe no entries found support
     @BeforeEach
     void clearMetadataStorage(){
         MetadataStorage.removeAll();
@@ -51,5 +57,51 @@ public class ScannerTest {
         expected.put(Flight.class, Flight.getMetadata());
         expected.put(Pilot.class, Pilot.getMetadata());
         assertThat(MetadataStorage.getAllData()).usingRecursiveComparison().isEqualTo(expected);
+    }
+
+    @Test
+    void testCompositeKeyMetadataScan() throws NoSuchFieldException {
+        MetadataScanner ms = new MetadataScanner();
+        ms.discoverMetadata("discovery.test8");
+        assertFalse(MetadataStorage.getAllData().isEmpty());
+        Map<Class<?>, EntityMetadata> expected = new HashMap<>();
+        expected.put(Club.class, Club.getMetadata());
+        expected.put(Player.class, Player.getMetadata());
+        assertThat(MetadataStorage.getAllData()).usingRecursiveComparison().isEqualTo(expected);
+    }
+
+    @Test
+    void testIdMissingDetection(){
+        MetadataScanner ms = new MetadataScanner();
+        RequiredFieldException e = assertThrows(RequiredFieldException.class, () -> ms.discoverMetadata("discovery.test3"));
+        assertTrue(e.getMessage().contains("requires id fields"));
+    }
+
+    @Test
+    void testTableNameMissingDetection(){
+        MetadataScanner ms = new MetadataScanner();
+        RequiredFieldException e = assertThrows(RequiredFieldException.class, () -> ms.discoverMetadata("discovery.test4"));
+        assertTrue(e.getMessage().contains("requires table name"));
+    }
+
+    @Test
+    void testRelationWithNonEntityTypesDetection(){
+        MetadataScanner ms = new MetadataScanner();
+        UnsupportedRelationException e = assertThrows(UnsupportedRelationException.class, () -> ms.discoverMetadata("discovery.test5"));
+        assertEquals("Class java.lang.Integer inside relation 'seats' is not an Entity", e.getMessage());
+    }
+
+    @Test
+    void testListFieldRequiredForManyRelations(){
+        MetadataScanner ms = new MetadataScanner();
+        ListFieldRequiredException e = assertThrows(ListFieldRequiredException.class, () -> ms.discoverMetadata("discovery.test6"));
+        assertEquals("Field subject of class Professor must be a list for ONE_TO_MANY relation", e.getMessage());
+    }
+
+    @Test
+    void testSameRelationNamesInClassDetection(){
+        MetadataScanner ms = new MetadataScanner();
+        DuplicateRelationNamesException e = assertThrows(DuplicateRelationNamesException.class, () -> ms.discoverMetadata("discovery.test7"));
+        assertTrue(e.getMessage().contains("Relation names must be unique inside class!"));
     }
 }
