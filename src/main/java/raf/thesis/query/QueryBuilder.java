@@ -3,18 +3,20 @@ package raf.thesis.query;
 
 import lombok.NoArgsConstructor;
 import raf.thesis.metadata.EntityMetadata;
+import raf.thesis.metadata.RelationMetadata;
+import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.exceptions.InvalidRelationPathException;
 import raf.thesis.query.tree.JoinNode;
 import raf.thesis.query.tree.SelectNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 @NoArgsConstructor
 public class QueryBuilder {
     private SelectNode rootSelectNode;
+    private Map<String, String> joinTableAliases = new HashMap<>();
     /**
      * Set root object of query builder to specify type that is returned
      * @param object .class of entity a query should return
@@ -116,19 +118,40 @@ public class QueryBuilder {
         return "";
     }
 
-    private JoinNode generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
-        //fill joining table fields
-        Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
-        EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
-        String tableName = joiningMetadata.getTableName();
-        List<String> joiningTablePk = extractKeys(joiningMetadata);
-
+    private List<JoinNode> generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
         //fill foreign table fields
         String foreignTableAlias = joiningRelationPath.substring(0, joiningRelationPath.lastIndexOf("."));
         Class<?> foreignClass = findInstanceType(foreignTableAlias, root);
         EntityMetadata foreignMetadata = MetadataStorage.get(foreignClass);
         List<String> foreignTableFk = extractKeys(foreignMetadata);
-        return new JoinNode(joinType, tableName, joiningRelationPath, joiningTablePk, foreignTableAlias, foreignTableFk);
+        String relationName = joiningRelationPath.substring(joiningRelationPath.lastIndexOf(".") + 1);
+        Optional<RelationMetadata> relationMetadata = foreignMetadata.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
+        //check if relation exists
+        if(relationMetadata.isEmpty())
+            throw new InvalidRelationPathException(joiningRelationPath);
+        //2 join nodes for many_to_many relations
+        if(relationMetadata.get().getRelationType() == RelationType.MANY_TO_MANY){
+            RelationMetadata rel = relationMetadata.get();
+            String joinedTableName = rel.getJoinedTableName();
+            List<String> joiningTablePk = rel.getMyJoinedTableFks();
+            String alias = joinTableAliases.get(joinedTableName) == null ? joinedTableName : joinTableAliases.get(joinedTableName) + "I";
+            joinTableAliases.put(joinedTableName, alias);
+            JoinNode node1 = new JoinNode(joinType, joinedTableName, alias, joiningTablePk, foreignTableAlias, foreignTableFk);
+            Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
+            EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
+            String tableName = joiningMetadata.getTableName();
+            List<String> secondTablePk = extractKeys(joiningMetadata);
+            JoinNode node2 = new JoinNode(INNER, tableName, joiningRelationPath, secondTablePk, alias, rel.getForeignKeyNames());
+            return List.of(node1, node2);
+        }
+        else{
+            //fill joining table fields
+            Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
+            EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
+            String tableName = joiningMetadata.getTableName();
+            List<String> joiningTablePk = extractKeys(joiningMetadata);
+            return List.of(new JoinNode(joinType, tableName, joiningRelationPath, joiningTablePk, foreignTableAlias, foreignTableFk));
+        }
     }
 
     //traverse through path to find right class
@@ -160,6 +183,8 @@ public class QueryBuilder {
         }
         return keys;
     }
+
+
 
     public final Join LEFT = Join.LEFT;
     public final Join INNER = Join.INNER;

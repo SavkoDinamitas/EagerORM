@@ -20,7 +20,7 @@ public class SelectNode {
         this.root = root;
     }
 
-    public void addJoinNode(JoinNode jn){
-        joinNodes.add(jn);
+    public void addJoinNode(List<JoinNode> jn){
+        joinNodes.addAll(jn);
     }
 }
