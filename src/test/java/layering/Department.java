@@ -1,5 +1,6 @@
 package layering;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,5 +20,10 @@ public class Department {
     @Column(columnName = "department_name")
     private String departmentName;
     @OneToMany
-    List<Employee> employees;
+    private List<Employee> employees;
+
+    public Department(int departmentId, String departmentName) {
+        this.departmentId = departmentId;
+        this.departmentName = departmentName;
+    }
 }
