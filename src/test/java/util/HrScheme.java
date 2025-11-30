@@ -92,6 +92,8 @@ public class HrScheme {
             ------------------------------------------------------------
             -- DROP TABLES (to allow re-running)
             ------------------------------------------------------------
+            DROP TABLE IF EXISTS employee_projects;
+            DROP TABLE IF EXISTS projects;
             DROP TABLE IF EXISTS job_history;
             DROP TABLE IF EXISTS employees;
             DROP TABLE IF EXISTS jobs;
