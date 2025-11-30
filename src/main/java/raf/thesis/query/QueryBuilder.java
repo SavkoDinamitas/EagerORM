@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 
 public class QueryBuilder {
     protected final SelectNode rootSelectNode;
-    private final Map<String, String> joinTableAliases = new HashMap<>();
+    private final Set<String> joinTables = new HashSet<>();
     protected final Dialect dialect = new ANSISQLDialect();
     /**
      * Set root object of query builder to specify type that is returned
@@ -160,22 +160,23 @@ public class QueryBuilder {
             throw new InvalidRelationPathException(joiningRelationPath);
         //2 join nodes for many_to_many relations
         if(relationMetadata.get().getRelationType() == RelationType.MANY_TO_MANY){
+            List<JoinNode> result = new ArrayList<>();
+            //make node for joining table on first time joinedTableNameUse
+            //no need to make new one for other side join in same query
             RelationMetadata rel = relationMetadata.get();
             String joinedTableName = rel.getJoinedTableName();
-            List<String> joiningTablePk = rel.getMyJoinedTableFks();
-            //system to differ two sides of n:m join in same query
-            String alias = joinTableAliases.get(joinedTableName) == null ? joinedTableName : joinTableAliases.get(joinedTableName) + "I";
-            joinTableAliases.put(joinedTableName, alias);
-            //make node for joining table
-            JoinNode node1 = new JoinNode(joinType, joinedTableName, alias, joiningTablePk, foreignTableAlias, extractKeys(foreignMetadata));
+            if(joinTables.add(joinedTableName)){
+                List<String> joiningTablePk = rel.getMyJoinedTableFks();
+                result.add(new JoinNode(joinType, joinedTableName, joinedTableName, joiningTablePk, foreignTableAlias, extractKeys(foreignMetadata)));
+            }
             //get table name for joining class
             Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
             EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
             String tableName = joiningMetadata.getTableName();
             //make list of 2 nodes for n:m relations
             List<String> secondTablePk = extractKeys(joiningMetadata);
-            JoinNode node2 = new JoinNode(INNER, tableName, joiningRelationPath, secondTablePk, alias, rel.getForeignKeyNames());
-            return List.of(node1, node2);
+            result.add(new JoinNode(INNER, tableName, joiningRelationPath, secondTablePk, joinedTableName, rel.getForeignKeyNames()));
+            return result;
         }
         else{
             //fill joining table fields
