@@ -139,16 +139,18 @@ public class QueryBuilder {
      * @return built SQL query
      */
     public String build(){
-        return "";
+        return generateSelectClause() + "\n" + generateJoinClauses() + ";";
     }
 
     private List<JoinNode> generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
         //fill foreign table fields
         String foreignTableAlias;
+        //find alias for old table (old -> already joined or root)
         if(joiningRelationPath.split("\\.").length > 1)
             foreignTableAlias = joiningRelationPath.substring(0, joiningRelationPath.lastIndexOf("."));
         else
             foreignTableAlias = rootSelectNode.getBaseAlias();
+        //locate relation metadata of given path
         Class<?> foreignClass = findInstanceType(foreignTableAlias, root);
         EntityMetadata foreignMetadata = MetadataStorage.get(foreignClass);
         String relationName = joiningRelationPath.substring(joiningRelationPath.lastIndexOf(".") + 1);
@@ -161,12 +163,16 @@ public class QueryBuilder {
             RelationMetadata rel = relationMetadata.get();
             String joinedTableName = rel.getJoinedTableName();
             List<String> joiningTablePk = rel.getMyJoinedTableFks();
+            //system to differ two sides of n:m join in same query
             String alias = joinTableAliases.get(joinedTableName) == null ? joinedTableName : joinTableAliases.get(joinedTableName) + "I";
             joinTableAliases.put(joinedTableName, alias);
+            //make node for joining table
             JoinNode node1 = new JoinNode(joinType, joinedTableName, alias, joiningTablePk, foreignTableAlias, extractKeys(foreignMetadata));
+            //get table name for joining class
             Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
             EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
             String tableName = joiningMetadata.getTableName();
+            //make list of 2 nodes for n:m relations
             List<String> secondTablePk = extractKeys(joiningMetadata);
             JoinNode node2 = new JoinNode(INNER, tableName, joiningRelationPath, secondTablePk, alias, rel.getForeignKeyNames());
             return List.of(node1, node2);
@@ -176,8 +182,21 @@ public class QueryBuilder {
             Class<?> joiningClass = findInstanceType(joiningRelationPath, root);
             EntityMetadata joiningMetadata = MetadataStorage.get(joiningClass);
             String tableName = joiningMetadata.getTableName();
-            List<String> joiningTablePk = extractKeys(joiningMetadata);
-            return List.of(new JoinNode(joinType, tableName, joiningRelationPath, joiningTablePk, foreignTableAlias, relationMetadata.get().getForeignKeyNames()));
+            //two cases: @MANY_TO_ONE and others
+            //@MANY_TO_ONE -> old table has the foreign key and new one uses its pk for join
+            //others -> joining table has the fk that joins on old table pk
+            List<String> joiningTablePk;
+            List<String> foreignTableKeys;
+            var relation = relationMetadata.get();
+            if(relation.getRelationType() == RelationType.MANY_TO_ONE){
+                foreignTableKeys = relation.getForeignKeyNames();
+                joiningTablePk = extractKeys(joiningMetadata);
+            }
+            else{
+                foreignTableKeys = extractKeys(foreignMetadata);
+                joiningTablePk = relation.getForeignKeyNames();
+            }
+            return List.of(new JoinNode(joinType, tableName, joiningRelationPath, joiningTablePk, foreignTableAlias, foreignTableKeys));
         }
     }
 
