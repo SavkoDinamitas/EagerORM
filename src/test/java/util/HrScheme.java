@@ -18,12 +18,12 @@ public class HrScheme {
     @Language("SQL")
     public static String TESTJOIN1 = """
             SELECT
-                d.department_id AS "departments.department_id",
-                d.department_name AS "departments.department_name",
-                e.employee_id AS "departments.employees.employee_id",
-                e.first_name AS "departments.employees.first_name",
-                e.last_name AS "departments.employees.last_name",
-                e.hire_date AS "departments.employees.hire_date"
+                d.department_id AS "%root.department_id",
+                d.department_name AS "%root.department_name",
+                e.employee_id AS "%root.employees.employee_id",
+                e.first_name AS "%root.employees.first_name",
+                e.last_name AS "%root.employees.last_name",
+                e.hire_date AS "%root.employees.hire_date"
             FROM departments d
             JOIN employees e
                 ON d.department_id = e.department_id
@@ -32,12 +32,12 @@ public class HrScheme {
     @Language("SQL")
     public static String OUTERJOIN = """
             SELECT
-                d.department_id AS "departments.department_id",
-                d.department_name AS "departments.department_name",
-                e.employee_id AS "departments.employees.employee_id",
-                e.first_name AS "departments.employees.first_name",
-                e.last_name AS "departments.employees.last_name",
-                e.hire_date AS "departments.employees.hire_date"
+                d.department_id AS "%root.department_id",
+                d.department_name AS "%root.department_name",
+                e.employee_id AS "%root.employees.employee_id",
+                e.first_name AS "%root.employees.first_name",
+                e.last_name AS "%root.employees.last_name",
+                e.hire_date AS "%root.employees.hire_date"
             FROM departments d
             LEFT OUTER JOIN employees e
                 ON d.department_id = e.department_id;
@@ -45,14 +45,14 @@ public class HrScheme {
     @Language("SQL")
     public static String MANYTOMANYJOIN = """
             SELECT
-                p.project_id AS "projects.project_id",
-                p.project_name AS "projects.project_name",
-                e.employee_id AS "projects.employees.employee_id",
-                e.first_name AS "projects.employees.first_name",
-                e.last_name AS "projects.employees.last_name",
-                e.hire_date AS "projects.employees.hire_date",
-                r.project_id AS "projects.employees.projects.project_id",
-                r.project_name AS "projects.employees.projects.project_name"
+                p.project_id AS "%root.project_id",
+                p.project_name AS "%root.project_name",
+                e.employee_id AS "%root.employees.employee_id",
+                e.first_name AS "%root.employees.first_name",
+                e.last_name AS "%root.employees.last_name",
+                e.hire_date AS "%root.employees.hire_date",
+                r.project_id AS "%root.employees.projects.project_id",
+                r.project_name AS "%root.employees.projects.project_name"
             FROM projects p
             JOIN employee_projects ep
                 ON p.project_id = ep.project_id
@@ -65,20 +65,20 @@ public class HrScheme {
     @Language("SQL")
     public static String RECURSIVEMULTIJOIN = """
             SELECT
-                e.employee_id AS "employees.employee_id",
-                e.first_name AS "employees.first_name",
-                e.last_name AS "employees.last_name",
-                e.hire_date AS "employees.hire_date",
-                m.employee_id AS "employees.manager.employee_id",
-                m.first_name AS "employees.manager.first_name",
-                m.last_name AS "employees.manager.last_name",
-                m.hire_date AS "employees.manager.hire_date",
-                d.department_id AS "employees.department.department_id",
-                d.department_name AS "employees.department.department_name",
-                s.employee_id AS "employees.department.employees.employee_id",
-                s.first_name AS "employees.department.employees.first_name",
-                s.last_name AS "employees.department.employees.last_name",
-                s.hire_date AS "employees.department.employees.hire_date"
+                e.employee_id AS "%root.employee_id",
+                e.first_name AS "%root.first_name",
+                e.last_name AS "%root.last_name",
+                e.hire_date AS "%root.hire_date",
+                m.employee_id AS "%root.manager.employee_id",
+                m.first_name AS "%root.manager.first_name",
+                m.last_name AS "%root.manager.last_name",
+                m.hire_date AS "%root.manager.hire_date",
+                d.department_id AS "%root.department.department_id",
+                d.department_name AS "%root.department.department_name",
+                s.employee_id AS "%root.department.employees.employee_id",
+                s.first_name AS "%root.department.employees.first_name",
+                s.last_name AS "%root.department.employees.last_name",
+                s.hire_date AS "%root.department.employees.hire_date"
             FROM employees e
             JOIN employees m
                 ON e.manager_id = m.employee_id
