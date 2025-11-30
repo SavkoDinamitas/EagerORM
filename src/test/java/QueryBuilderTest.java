@@ -17,7 +17,7 @@ public class QueryBuilderTest {
     @Test
     public void testSingleJoinGeneration(){
         String check = QueryBuilder.select(Crew.class).join("pilot").generateJoinClauses();
-        assertEquals("INNER JOIN pilots AS \"pilot\" ON ((\"pilot\".pilotid) = (\"%root\".pilotid))\n", check);
+        assertEquals("INNER JOIN pilots AS \"pilot\" ON ((\"pilot\".crewid) = (\"%root\".crewid))\n", check);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class QueryBuilderTest {
         assertEquals("INNER JOIN airplanes_flights AS \"airplanes_flights\" ON ((\"airplanes_flights\".id) = (\"%root\".id))\n" +
                 "INNER JOIN flights AS \"flights\" ON ((\"flights\".flightnumber) = (\"airplanes_flights\".flightnumber))\n" +
                 "INNER JOIN crews AS \"flights.crew\" ON ((\"flights.crew\".crewid) = (\"flights\".crewid))\n" +
-                "INNER JOIN pilots AS \"flights.crew.pilot\" ON ((\"flights.crew.pilot\".pilotid) = (\"flights.crew\".pilotid))\n", check);
+                "INNER JOIN pilots AS \"flights.crew.pilot\" ON ((\"flights.crew.pilot\".crewid) = (\"flights.crew\".crewid))\n", check);
     }
 
     @Test
