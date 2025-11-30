@@ -239,21 +239,32 @@ public class MetadataScanner {
 
     //fill foreign keys by default with primary keys of their related classes
     private void solveRelationWithoutFK(RelationMetadata relationMetadata) {
+        EntityMetadata myEntity = MetadataStorage.get(relationMetadata.getForeignField().getDeclaringClass());
         EntityMetadata foreignEntity = MetadataStorage.get(relationMetadata.getForeignClass());
         if (relationMetadata.getForeignKeyNames() == null) {
-            relationMetadata.setForeignKeyNames(new ArrayList<>());
-            for (var pk : foreignEntity.getIdFields()) {
-                relationMetadata.getForeignKeyNames().add(pk.getName().toLowerCase());
+            List<String> names = new ArrayList<>();
+            if(relationMetadata.getRelationType() == RelationType.MANY_TO_ONE || relationMetadata.getRelationType() == RelationType.MANY_TO_MANY) {
+                names.addAll(extractPKNames(foreignEntity));
             }
+            else{
+                names.addAll(extractPKNames(myEntity));
+            }
+            relationMetadata.setForeignKeyNames(names);
         }
         if (relationMetadata.getRelationType() == RelationType.MANY_TO_MANY) {
-            EntityMetadata myEntity = MetadataStorage.get(relationMetadata.getForeignField().getDeclaringClass());
             if (relationMetadata.getMyJoinedTableFks() == null) {
-                relationMetadata.setMyJoinedTableFks(new ArrayList<>());
-                for (var pk : myEntity.getIdFields()) {
-                    relationMetadata.getMyJoinedTableFks().add(pk.getName().toLowerCase());
-                }
+                relationMetadata.setMyJoinedTableFks(extractPKNames(myEntity));
             }
         }
+    }
+
+    private List<String> extractPKNames(EntityMetadata metadata){
+        List<String> keys = new ArrayList<>();
+        for(var column : metadata.getColumns().values()){
+            if(metadata.getIdFields().contains(column.getField())){
+                keys.add(column.getColumnName());
+            }
+        }
+        return keys;
     }
 }

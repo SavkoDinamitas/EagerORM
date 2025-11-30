@@ -15,8 +15,12 @@ public class RelationMetadata {
     RelationType relationType;
     Class<?> foreignClass;
     //fields for query building
+
+    //names of foreign key columns in DB - unrelated to type of relation, if Many-to-many -> foreign key names in JT to foreign entity
     List<String> foreignKeyNames;
+    //name of joined table
     String joinedTableName;
+    //names of foreign keys in joined table that refer to me
     List<String> myJoinedTableFks;
     //potential eager n:m loading
     String foreignRelationName;
