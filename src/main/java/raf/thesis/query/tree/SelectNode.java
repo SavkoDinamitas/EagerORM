@@ -7,16 +7,12 @@ import raf.thesis.query.Join;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
 public class SelectNode {
-    @Getter
     private final Class<?> root;
-    @Getter
     private final String baseAlias = "%root";
-    @Getter
     private final String baseTableName;
-    @Getter
     private List<JoinNode> joinNodes = new ArrayList<>();
-    @Getter
     @Setter
     private List<Expression> selectFieldNodes = new ArrayList<>();
     @Setter

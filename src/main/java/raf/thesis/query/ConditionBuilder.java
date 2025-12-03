@@ -18,7 +18,7 @@ public class ConditionBuilder {
         String fieldName = path[path.length - 1];
         int index = fieldPath.lastIndexOf(".");
         String alias = index == -1 ? "%root" : fieldPath.substring(0, index);
-        return new FieldNode(alias, fieldName);
+        return new FieldNode(fieldName, alias);
     }
 
     public static Literal lit(String value){

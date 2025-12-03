@@ -43,22 +43,38 @@ public class ANSISQLDialect implements Dialect {
 
     @Override
     public String generateWhereClause(WhereNode whereNode) {
-        return "";
+        return "WHERE " + whereNode.getExpression().toSql(this);
     }
 
     @Override
     public String generateHavingClause(HavingNode havingNode) {
-        return "";
+        return "HAVING " + havingNode.getExpression().toSql(this);
     }
 
     @Override
     public String generateGroupByClause(GroupByNode groupByNode) {
-        return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("GROUP BY ");
+        for(var g : groupByNode.getExpressions()){
+            sb.append(g.toSql(this));
+            sb.append(",");
+        }
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
     }
 
     @Override
-    public String generateOrderByClause(OrderByNode orderByNode) {
-        return "";
+    public String generateOrderByClause(List<OrderByNode> orderByNodes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ORDER BY ");
+        for(OrderByNode orderByNode : orderByNodes){
+            sb.append(orderByNode.getExp().toSql(this));
+            sb.append(" ");
+            sb.append(orderByNode.getOrder());
+            sb.append(",");
+        }
+        sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
     }
 
     @Override

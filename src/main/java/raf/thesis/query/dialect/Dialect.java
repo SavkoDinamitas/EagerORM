@@ -2,6 +2,8 @@ package raf.thesis.query.dialect;
 
 import raf.thesis.query.tree.*;
 
+import java.util.List;
+
 public interface Dialect {
     String generateSelectClause(SelectNode select);
 
@@ -13,7 +15,7 @@ public interface Dialect {
 
     String generateGroupByClause(GroupByNode groupByNode);
 
-    String generateOrderByClause(OrderByNode orderByNode);
+    String generateOrderByClause(List<OrderByNode> orderByNodes);
 
     String generateLimitClause(LimitNode limitNode);
 

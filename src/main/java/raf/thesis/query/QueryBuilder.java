@@ -140,7 +140,7 @@ public class QueryBuilder {
      * @return built SQL query
      */
     public String build(){
-        return generateSelectClause() + "\n" + generateJoinClauses() + ";";
+        return generateSelectClause() + "\n" + generateJoinClauses() + generateWhereClause() + generateGroupByClause() + generateHavingClause() + generateOrderByClause() + ";";
     }
 
     private List<JoinNode> generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
@@ -263,6 +263,22 @@ public class QueryBuilder {
 
     public String generateSelectClause(){
         return dialect.generateSelectClause(rootSelectNode);
+    }
+
+    public String generateWhereClause(){
+        return rootSelectNode.getWhereNode() != null ? dialect.generateWhereClause(rootSelectNode.getWhereNode()) + "\n" : "";
+    }
+
+    public String generateGroupByClause(){
+        return rootSelectNode.getGroupByNode() != null ? dialect.generateGroupByClause(rootSelectNode.getGroupByNode()) + "\n" : "";
+    }
+
+    public String generateHavingClause(){
+        return rootSelectNode.getHavingNode() != null ? dialect.generateHavingClause(rootSelectNode.getHavingNode()) + "\n" : "";
+    }
+
+    public String generateOrderByClause(){
+        return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes()) : "";
     }
 
     public final Join LEFT = Join.LEFT;
