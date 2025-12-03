@@ -138,4 +138,15 @@ public class LayerIntegrationTest {
             assertThat(projects).usingRecursiveComparison().isEqualTo(expected);
         }
     }
+
+    @Test
+    void testRecursiveMultiJoinIntegrationTest() throws SQLException {
+        String query = QueryBuilder.select(Employee.class).join("department").join("manager").join("department.employees").build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            assertFalse(employees.isEmpty());
+        }
+    }
 }

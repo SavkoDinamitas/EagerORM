@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.annotations.Column;
-import raf.thesis.metadata.annotations.Entity;
-import raf.thesis.metadata.annotations.Id;
-import raf.thesis.metadata.annotations.ManyToMany;
+import raf.thesis.metadata.annotations.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,6 +26,10 @@ public class Employee {
     private LocalDate hireDate;
     @ManyToMany(joinedTableName = "employee_projects")
     private List<Project> projects;
+    @ManyToOne(foreignKey = "manager_id")
+    private Employee manager;
+    @ManyToOne
+    private Department department;
 
     public Employee(int employeeId, String firstName, String lastName, LocalDate hireDate) {
         this.employeeId = employeeId;
