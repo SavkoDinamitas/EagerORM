@@ -1,11 +1,13 @@
 import discovery.test2.Airplane;
 import discovery.test2.Crew;
+import discovery.test2.Flight;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.QueryBuilder;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static raf.thesis.query.ConditionBuilder.*;
 
 public class QueryBuilderTest {
     @BeforeAll
@@ -53,5 +55,48 @@ public class QueryBuilderTest {
                 "\"flights.crew\".crewid AS \"%root.flights.crew.crewid\",\n" +
                 "\"flights.crew\".crewnumber AS \"%root.flights.crew.crewnumber\"\n" +
                 " FROM airplanes AS \"%root\"", check);
+    }
+
+    @Test
+    void testWhereGenerationClause(){
+        String check = QueryBuilder.select(Crew.class).where(
+                and(
+                        field("crewSize").gt(lit(5)),
+                        field("crewSize").lt(lit(10)),
+                        field("crewId").in(tuple(lit(1), lit(2), lit(3), lit(4)))
+                )
+        ).generateWhereClause();
+        assertEquals("WHERE ((\"%root\".crewSize) > (5)) AND (((\"%root\".crewSize) < (10)) AND ((\"%root\".crewId) IN (1,2,3,4)))\n", check);
+    }
+
+    @Test
+    void testLikeGenerationClause(){
+        String check = QueryBuilder.select(Flight.class).where(
+                field("flightType").like("L%")
+        ).generateWhereClause();
+        assertEquals("WHERE (\"%root\".flightType) LIKE ('L%')\n", check);
+    }
+
+    @Test
+    void testSubQueryGeneration(){
+        String check = QueryBuilder.select(Flight.class).join("crew").where(
+                field("crew.crewSize").eq(
+                        QueryBuilder.subQuery(Crew.class, max(field("crewSize"))
+                        ).distinct()
+                )
+        ).build();
+        assertEquals("SELECT\n" +
+                "\"%root\".flightnumber AS \"%root.flightnumber\",\n" +
+                "\"%root\".flighttype AS \"%root.flighttype\",\n" +
+                "\"crew\".crewid AS \"%root.crew.crewid\",\n" +
+                "\"crew\".crewnumber AS \"%root.crew.crewnumber\"\n" +
+                " FROM flights AS \"%root\"\n" +
+                "INNER JOIN crews AS \"crew\" ON ((\"crew\".crewid) = (\"%root\".crewid))\n" +
+                "WHERE (\"crew\".crewSize) = (\n" +
+                "(SELECT DISTINCT\n" +
+                "MAX(\"%root\".crewSize)\n" +
+                " FROM crews AS \"%root\"\n" +
+                "))\n" +
+                ";", check);
     }
 }
