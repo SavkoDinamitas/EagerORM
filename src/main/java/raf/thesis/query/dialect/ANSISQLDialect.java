@@ -12,7 +12,7 @@ public class ANSISQLDialect implements Dialect {
 
     @Override
     public String generateSelectClause(SelectNode select) {
-        return "SELECT\n%s\n FROM %s AS %s".formatted(generateFields(select.getSelectFieldNodes(), select.getBaseAlias()), select.getBaseTableName(), quote(select.getBaseAlias()));
+        return "SELECT%s\n%s\n FROM %s AS %s".formatted(select.isDistinct() ? " DISTINCT" : "", generateFields(select.getSelectFieldNodes(), select.getBaseAlias()), select.getBaseTableName(), quote(select.getBaseAlias()));
     }
 
     private String generateFields(List<Expression> fieldNodes, String baseAlias){
@@ -89,17 +89,17 @@ public class ANSISQLDialect implements Dialect {
         result.append(operation.getLeft().toSql(this));
         result.append(")");
         switch (operation.getCode()){
-            case AND -> result.append(" AND ");
-            case OR -> result.append(" OR ");
-            case EQ -> result.append(" = ");
-            case GT -> result.append(" > ");
-            case LT -> result.append(" < ");
-            case LIKE -> result.append(" LIKE ");
+            case AND -> result.append(" AND (");
+            case OR -> result.append(" OR (");
+            case EQ -> result.append(" = (");
+            case GT -> result.append(" > (");
+            case LT -> result.append(" < (");
+            case LIKE -> result.append(" LIKE (");
             case IN -> result.append(" IN ");
         }
-        result.append("(");
         result.append(operation.getRight().toSql(this));
-        result.append(")");
+        if(operation.getCode() != BinaryOpCode.IN)
+            result.append(")");
         return result.toString();
     }
 
@@ -124,7 +124,7 @@ public class ANSISQLDialect implements Dialect {
         return switch(literal){
             case Literal.DoubleCnst d -> String.valueOf(d.x());
             case Literal.LongCnst l -> String.valueOf(l.x());
-            case Literal.StringCnst s -> "'" + s + "'";
+            case Literal.StringCnst s -> "'" + s.x() + "'";
         };
     }
 
@@ -137,6 +137,9 @@ public class ANSISQLDialect implements Dialect {
             case AVG -> result.append("AVG(");
             case MIN -> result.append("MIN(");
             case MAX -> result.append("MAX(");
+        }
+        if(functionNode.isDistinct()){
+            result.append("DISTINCT ");
         }
         result.append(functionNode.getExp().toSql(this));
         result.append(")");

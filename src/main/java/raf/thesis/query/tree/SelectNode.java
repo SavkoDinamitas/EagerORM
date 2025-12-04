@@ -24,6 +24,8 @@ public class SelectNode {
     @Setter
     private List<OrderByNode> orderByNodes;
     private LimitNode limitNode;
+    @Setter
+    private boolean distinct;
 
     public SelectNode(Class<?> root, String baseTableName) {
         this.root = root;

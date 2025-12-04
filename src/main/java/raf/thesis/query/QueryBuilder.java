@@ -47,6 +47,7 @@ public class QueryBuilder {
      * @return updated query builder
      */
     public QueryBuilder distinct(){
+        rootSelectNode.setDistinct(true);
         return this;
     }
 
