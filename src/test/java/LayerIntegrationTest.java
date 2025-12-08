@@ -150,4 +150,155 @@ public class LayerIntegrationTest {
             assertFalse(employees.isEmpty());
         }
     }
+
+    @Test
+    void testLikeIntegration() throws SQLException {
+        String query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena));
+        }
+    }
+
+    @Test
+    void testInIntegration() throws SQLException {
+        String query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex));
+        }
+    }
+
+    @Test
+    void testDateLiteralIntegration() throws SQLException {
+        String query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex));
+        }
+
+        query = QueryBuilder.select(Employee.class).where(field("hire_date").in(
+                tuple(
+                        lit(LocalDate.of(2003, 6, 17)),
+                        lit(LocalDate.of(2005, 9, 21)),
+                        lit(LocalDate.of(2001, 1, 13)))))
+                .build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex));
+        }
+    }
+
+    @Test
+    void testLogicalOpIntegration() throws SQLException {
+        String query = QueryBuilder.select(Employee.class).where(
+                and(
+                        not(field("first_name").eq(lit("Alexander"))),
+                        not(field("first_name").eq(lit("Lex"))),
+                        not(field("first_name").eq(lit("Bruce")))
+                ))
+                .build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena));
+        }
+        query = QueryBuilder.select(Employee.class).where(
+                        or(
+                                field("first_name").eq(lit("Steven")),
+                                field("first_name").eq(lit("Neena")),
+                                field("first_name").eq(lit("Lex"))
+                        ))
+                .build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex));
+        }
+    }
+
+    @Test
+    void testIsNullIntegration() throws SQLException {
+        String query = QueryBuilder.select(Department.class).where(field("manager_id").isNull()).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
+            Department Administration = new Department(10, "Administration");
+            Department Marketing = new Department(20, "Marketing");
+            Department Purchasing = new Department(30, "Purchasing");
+            Department HR = new Department(40, "Human Resources");
+            assertThat(departments).usingRecursiveComparison().isEqualTo(List.of(Administration, Marketing, Purchasing, HR));
+        }
+
+        query = QueryBuilder.select(Department.class).where(not(field("manager_id").isNull())).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
+            assertTrue(departments.isEmpty());
+        }
+    }
+
+    @Test
+    void testSimpleSubqueryIntegration() throws SQLException {
+        String query = QueryBuilder.select(Department.class).where(
+                field("department_id").eq(
+                        QueryBuilder.subQuery(Department.class, max(field("department_id"))))
+        ).build();
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
+            Department HR = new Department(40, "Human Resources");
+            assertThat(departments).usingRecursiveComparison().isEqualTo(List.of(HR));
+        }
+    }
+
+    @Test
+    void testGroupByAndHavingClauseInSubqueryIntegration() throws SQLException {
+        String query = QueryBuilder.select(Department.class).where(field("department_id").in(
+                QueryBuilder.subQuery(Department.class, field("department_id"))
+                        .join("employees")
+                        .groupBy(field("department_id"))
+                        .having(max(field("employees.employee_id").gt(lit(102))))
+        ))
+                .orderBy(asc(field("department_id")))
+                .build();
+
+        try (Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+
+            List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
+            Department Marketing = new Department(20, "Marketing");
+            Department Purchasing = new Department(30, "Purchasing");
+            assertThat(departments).usingRecursiveComparison().isEqualTo(List.of(Marketing, Purchasing));
+        }
+    }
 }
