@@ -125,9 +125,11 @@ public class ANSISQLDialect implements Dialect {
             case Literal.DoubleCnst d -> String.valueOf(d.x());
             case Literal.LongCnst l -> String.valueOf(l.x());
             case Literal.StringCnst s -> "'" + s.x() + "'";
+            case Literal.BoolCnst b -> String.valueOf(b.x());
             case Literal.DateCnst d -> "DATE '%s-%s-%s'".formatted(d.x().getYear(), d.x().getMonthValue(), d.x().getDayOfMonth());
             case Literal.DateTimeCnst d -> "TIMESTAMP '%s-%s-%s %s:%s:%s'".formatted(d.x().getYear(), d.x().getMonthValue(), d.x().getDayOfMonth(), d.x().getHour(), d.x().getMinute(), d.x().getSecond());
             case Literal.TimeCnst d -> "TIME '%s:%s:%s'".formatted(d.x().getHour(), d.x().getMinute(), d.x().getSecond());
+            case Literal.NullCnst n -> "NULL";
         };
     }
 
@@ -170,6 +172,31 @@ public class ANSISQLDialect implements Dialect {
     @Override
     public String generateAliasedFieldExp(AliasedColumn column){
         return "%s AS %s".formatted(column.getExpression().toSql(this), column.getColAlias());
+    }
+
+    @Override
+    public String generateInsertClause(List<String> columns, String tableName) {
+        return "INSERT INTO %s (%s) VALUES (%s)".formatted(tableName, generateInsertColumnParenthesis(columns), generateQuestionMarks(columns.size()));
+    }
+
+    private String generateInsertColumnParenthesis(List<String> columns){
+        StringBuilder result = new StringBuilder();
+        for(String column : columns){
+            result.append(column);
+            result.append(",");
+        }
+        result.deleteCharAt(result.length()-1);
+        return result.toString();
+    }
+
+    private String generateQuestionMarks(int number){
+        StringBuilder result = new StringBuilder();
+        for(int i = 0; i < number; i++){
+            result.append("?");
+            result.append(",");
+        }
+        result.deleteCharAt(result.length()-1);
+        return result.toString();
     }
 
     private String generateFieldExpWithAlias(FieldNode fieldNode, String baseAlias) {

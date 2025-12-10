@@ -3,6 +3,7 @@ package raf.thesis.query.dialect;
 import raf.thesis.query.tree.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Dialect {
     String generateSelectClause(SelectNode select);
@@ -32,4 +33,6 @@ public interface Dialect {
     String generateFieldExp(FieldNode fieldNode);
 
     String generateAliasedFieldExp(AliasedColumn column);
+
+    String generateInsertClause(List<String> columns, String tableName);
 }

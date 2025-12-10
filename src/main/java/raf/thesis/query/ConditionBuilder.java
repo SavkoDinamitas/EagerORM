@@ -40,6 +40,10 @@ public class ConditionBuilder {
         return new Literal.DoubleCnst(value);
     }
 
+    public static Literal lit(boolean value){
+        return new Literal.BoolCnst(value);
+    }
+
     public static Literal lit(LocalDate date){
         return new Literal.DateCnst(date);
     }

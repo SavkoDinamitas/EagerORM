@@ -25,6 +25,12 @@ public sealed interface Literal extends Expression{
             return dialect.generateLiteralExp(this);
         }
     }
+    public record BoolCnst(boolean x) implements Literal {
+        @Override
+        public String toSql(Dialect dialect) {
+            return dialect.generateLiteralExp(this);
+        }
+    }
     public record DateCnst(LocalDate x) implements Literal {
         @Override
         public String toSql(Dialect dialect) {
@@ -38,6 +44,12 @@ public sealed interface Literal extends Expression{
         }
     }
     public record TimeCnst(LocalTime x) implements Literal {
+        @Override
+        public String toSql(Dialect dialect) {
+            return dialect.generateLiteralExp(this);
+        }
+    }
+    public record NullCnst() implements Literal {
         @Override
         public String toSql(Dialect dialect) {
             return dialect.generateLiteralExp(this);
