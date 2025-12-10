@@ -5,8 +5,10 @@ import domain.hr.Project;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
+import util.H2HRProvider;
 import util.HrScheme;
 
 import java.sql.Connection;
@@ -20,26 +22,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(H2HRProvider.class)
 public class RelationRowMapperTest {
-    private static Connection conn;
+    private Connection conn;
     private static final RowMapper rowMapper = new DefaultMapperImplementation();
 
     @BeforeAll
-    static void setupDatabase() throws SQLException, NoSuchFieldException {
-        conn = DriverManager.getConnection("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1", "sa", "");
-        try (Statement stmt = conn.createStatement()) {
-            //noinspection SqlSourceToSinkFlow
-            stmt.execute(HrScheme.SCRIPT);
-        }
+    static void fillMetadata() throws SQLException, NoSuchFieldException {
         //fill metadata
         HrScheme.fillMetadataManually();
-    }
-
-    @AfterAll
-    static void closeDatabase() throws SQLException {
-        if (conn != null) {
-            conn.close();
-        }
     }
 
     @Test

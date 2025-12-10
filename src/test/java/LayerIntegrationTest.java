@@ -5,11 +5,13 @@ import layering.Project;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.Join;
 import raf.thesis.query.QueryBuilder;
+import util.H2HRProvider;
 import util.HrScheme;
 
 import java.sql.*;
@@ -21,25 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static raf.thesis.query.ConditionBuilder.*;
 
+@ExtendWith(H2HRProvider.class)
 public class LayerIntegrationTest {
-    private static Connection conn;
+    private Connection conn;
     private static final RowMapper rowMapper = new DefaultMapperImplementation();
     @BeforeAll
-    static void setupDatabase() throws SQLException, NoSuchFieldException {
-        conn = DriverManager.getConnection("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1", "sa", "");
-        try (Statement stmt = conn.createStatement()) {
-            //noinspection SqlSourceToSinkFlow
-            stmt.execute(HrScheme.SCRIPT);
-        }
+    static void fillMetadata() throws SQLException, NoSuchFieldException {
         MetadataScanner ms = new MetadataScanner();
         ms.discoverMetadata("layering");
-    }
-
-    @AfterAll
-    static void closeDatabase() throws SQLException {
-        if (conn != null) {
-            conn.close();
-        }
     }
 
     @Test
