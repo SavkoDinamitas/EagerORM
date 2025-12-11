@@ -1,6 +1,7 @@
 package raf.thesis.query;
 
 import raf.thesis.metadata.storage.MetadataStorage;
+import raf.thesis.query.dialect.ANSISQLDialect;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.tree.Expression;
 import raf.thesis.query.tree.OrderByNode;
@@ -113,7 +114,7 @@ public class SubQueryBuilder extends QueryBuilder implements Expression {
         rootSelectNode.setSelectFieldNodes(columns);
         StringBuilder result = new StringBuilder();
         result.append("\n(");
-        result.append(build());
+        result.append(build(dialect));
         //remove ; at the end of build
         result.deleteCharAt(result.length() - 1);
         result.append(")");

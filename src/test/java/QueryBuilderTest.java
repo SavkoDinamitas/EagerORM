@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.QueryBuilder;
+import raf.thesis.query.dialect.ANSISQLDialect;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static raf.thesis.query.ConditionBuilder.*;
@@ -18,20 +19,20 @@ public class QueryBuilderTest {
 
     @Test
     public void testSingleJoinGeneration(){
-        String check = QueryBuilder.select(Crew.class).join("pilot").generateJoinClauses();
+        String check = QueryBuilder.select(Crew.class).join("pilot").generateJoinClauses(new ANSISQLDialect());
         assertEquals("INNER JOIN pilots AS \"pilot\" ON ((\"pilot\".crewid) = (\"%root\".crewid))\n", check);
     }
 
     @Test
     public void testManyToManyJoinGeneration(){
-        String check = QueryBuilder.select(Airplane.class).join("flights").generateJoinClauses();
+        String check = QueryBuilder.select(Airplane.class).join("flights").generateJoinClauses(new ANSISQLDialect());
         assertEquals("INNER JOIN airplanes_flights AS \"airplanes_flights\" ON ((\"airplanes_flights\".id) = (\"%root\".id))\n" +
                 "INNER JOIN flights AS \"flights\" ON ((\"flights\".flightnumber) = (\"airplanes_flights\".flightnumber))\n", check);
     }
 
     @Test
     public void testInDepthJoinGeneration(){
-        String check = QueryBuilder.select(Airplane.class).join("flights").join("flights.crew").join("flights.crew.pilot").generateJoinClauses();
+        String check = QueryBuilder.select(Airplane.class).join("flights").join("flights.crew").join("flights.crew.pilot").generateJoinClauses(new ANSISQLDialect());
         assertEquals("INNER JOIN airplanes_flights AS \"airplanes_flights\" ON ((\"airplanes_flights\".id) = (\"%root\".id))\n" +
                 "INNER JOIN flights AS \"flights\" ON ((\"flights\".flightnumber) = (\"airplanes_flights\".flightnumber))\n" +
                 "INNER JOIN crews AS \"flights.crew\" ON ((\"flights.crew\".crewid) = (\"flights\".crewid))\n" +
@@ -40,13 +41,13 @@ public class QueryBuilderTest {
 
     @Test
     public void testSimpleSelectClauseGeneration(){
-        String check = QueryBuilder.select(Airplane.class).generateSelectClause();
+        String check = QueryBuilder.select(Airplane.class).generateSelectClause(new ANSISQLDialect());
         assertEquals("SELECT\n\"%root\".id AS \"%root.id\",\n\"%root\".name AS \"%root.name\"\n FROM airplanes AS \"%root\"", check);
     }
 
     @Test
     public void testMultipleJoinSelectClauseGeneration(){
-        String check = QueryBuilder.select(Airplane.class).join("flights").join("flights.crew").generateSelectClause();
+        String check = QueryBuilder.select(Airplane.class).join("flights").join("flights.crew").generateSelectClause(new ANSISQLDialect());
         assertEquals("SELECT\n" +
                 "\"%root\".id AS \"%root.id\",\n" +
                 "\"%root\".name AS \"%root.name\",\n" +
@@ -65,7 +66,7 @@ public class QueryBuilderTest {
                         field("crewSize").lt(lit(10)),
                         field("crewId").in(tuple(lit(1), lit(2), lit(3), lit(4)))
                 )
-        ).generateWhereClause();
+        ).generateWhereClause(new ANSISQLDialect());
         assertEquals("WHERE ((\"%root\".crewSize) > (5)) AND (((\"%root\".crewSize) < (10)) AND ((\"%root\".crewId) IN (1,2,3,4)))\n", check);
     }
 
@@ -73,7 +74,7 @@ public class QueryBuilderTest {
     void testLikeGenerationClause(){
         String check = QueryBuilder.select(Flight.class).where(
                 field("flightType").like("L%")
-        ).generateWhereClause();
+        ).generateWhereClause(new ANSISQLDialect());
         assertEquals("WHERE (\"%root\".flightType) LIKE ('L%')\n", check);
     }
 
@@ -84,7 +85,7 @@ public class QueryBuilderTest {
                         QueryBuilder.subQuery(Crew.class, max(field("crewSize"))
                         ).distinct()
                 )
-        ).build();
+        ).build(new ANSISQLDialect());
         assertEquals("SELECT\n" +
                 "\"%root\".flightnumber AS \"%root.flightnumber\",\n" +
                 "\"%root\".flighttype AS \"%root.flighttype\",\n" +

@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 public class QueryBuilder {
     protected final SelectNode rootSelectNode;
     private final Set<String> joinTables = new HashSet<>();
-    protected final Dialect dialect = new ANSISQLDialect();
     private boolean pdoQuery = false;
     /**
      * Set root object of query builder to specify type that is returned
@@ -162,8 +161,8 @@ public class QueryBuilder {
      * Generate SQL query from builder
      * @return built SQL query
      */
-    public String build(){
-        return generateSelectClause() + "\n" + generateJoinClauses() + generateWhereClause() + generateGroupByClause() + generateHavingClause() + generateOrderByClause() + ";";
+    public String build(Dialect dialect){
+        return generateSelectClause(dialect) + "\n" + generateJoinClauses(dialect) + generateWhereClause(dialect) + generateGroupByClause(dialect) + generateHavingClause(dialect) + generateOrderByClause(dialect) + ";";
     }
 
     private List<JoinNode> generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
@@ -275,7 +274,7 @@ public class QueryBuilder {
         }
     }
 
-    public String generateJoinClauses(){
+    public String generateJoinClauses(Dialect dialect){
         StringBuilder builder = new StringBuilder();
         for(var join : rootSelectNode.getJoinNodes()){
             builder.append(dialect.generateJoinClause(join));
@@ -284,23 +283,23 @@ public class QueryBuilder {
         return builder.toString();
     }
 
-    public String generateSelectClause(){
+    public String generateSelectClause(Dialect dialect){
         return dialect.generateSelectClause(rootSelectNode);
     }
 
-    public String generateWhereClause(){
+    public String generateWhereClause(Dialect dialect){
         return rootSelectNode.getWhereNode() != null ? dialect.generateWhereClause(rootSelectNode.getWhereNode()) + "\n" : "";
     }
 
-    public String generateGroupByClause(){
+    public String generateGroupByClause(Dialect dialect){
         return rootSelectNode.getGroupByNode() != null ? dialect.generateGroupByClause(rootSelectNode.getGroupByNode()) + "\n" : "";
     }
 
-    public String generateHavingClause(){
+    public String generateHavingClause(Dialect dialect){
         return rootSelectNode.getHavingNode() != null ? dialect.generateHavingClause(rootSelectNode.getHavingNode()) + "\n" : "";
     }
 
-    public String generateOrderByClause(){
+    public String generateOrderByClause(Dialect dialect){
         return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes()) : "";
     }
 

@@ -44,7 +44,7 @@ public class Session {
     }
 
     public <T> List<T> executeSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build();
+        String sql = queryBuilder.build(dialect);
         if (sql == null)
             return null;
         return executeSelect(sql, resultClass);
@@ -62,7 +62,7 @@ public class Session {
     }
 
     public <T> List<T> executePDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build();
+        String sql = queryBuilder.build(dialect);
         if (sql == null)
             return null;
         return executePDOSelect(sql, resultClass);
@@ -80,7 +80,7 @@ public class Session {
     }
 
     public <T> Optional<T> executeSingleRowPDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build();
+        String sql = queryBuilder.build(dialect);
         if (sql == null)
             return Optional.empty();
         return executeSingleRowPDOSelect(sql, resultClass);

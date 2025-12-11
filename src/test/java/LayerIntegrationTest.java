@@ -2,7 +2,6 @@ import layering.DepartmentsWithMaxEmployeeIdPDO;
 import layering.Employee;
 import layering.Department;
 import layering.Project;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +10,8 @@ import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.Join;
 import raf.thesis.query.QueryBuilder;
+import raf.thesis.query.dialect.ANSISQLDialect;
 import util.H2HRProvider;
-import util.HrScheme;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -35,7 +34,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testSimpleJoinIntegrationTest() throws SQLException {
-        String query = QueryBuilder.select(Department.class).join("employees").build();
+        String query = QueryBuilder.select(Department.class).join("employees").build(new ANSISQLDialect());
         System.out.println(query);
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
@@ -62,7 +61,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testLeftJoinIntegrationTest() throws SQLException {
-        String query = QueryBuilder.select(Department.class).join("employees", Join.LEFT).build();
+        String query = QueryBuilder.select(Department.class).join("employees", Join.LEFT).build(new ANSISQLDialect());
         System.out.println(query);
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
@@ -94,7 +93,7 @@ public class LayerIntegrationTest {
                 .join("employees")
                 .join("employees.projects")
                 .orderBy(asc(field("project_id")))
-                .build();
+                .build(new ANSISQLDialect());
         System.out.println(query);
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
@@ -135,7 +134,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testRecursiveMultiJoinIntegrationTest() throws SQLException {
-        String query = QueryBuilder.select(Employee.class).join("department").join("manager").join("department.employees").build();
+        String query = QueryBuilder.select(Employee.class).join("department").join("manager").join("department.employees").build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -146,7 +145,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testLikeIntegration() throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).build();
+        String query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -159,7 +158,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testInIntegration() throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).build();
+        String query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -173,7 +172,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testDateLiteralIntegration() throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).build();
+        String query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -189,7 +188,7 @@ public class LayerIntegrationTest {
                         lit(LocalDate.of(2003, 6, 17)),
                         lit(LocalDate.of(2005, 9, 21)),
                         lit(LocalDate.of(2001, 1, 13)))))
-                .build();
+                .build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -209,7 +208,7 @@ public class LayerIntegrationTest {
                         not(field("first_name").eq(lit("Lex"))),
                         not(field("first_name").eq(lit("Bruce")))
                 ))
-                .build();
+                .build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -224,7 +223,7 @@ public class LayerIntegrationTest {
                                 field("first_name").eq(lit("Neena")),
                                 field("first_name").eq(lit("Lex"))
                         ))
-                .build();
+                .build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -238,7 +237,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testIsNullIntegration() throws SQLException {
-        String query = QueryBuilder.select(Department.class).where(field("manager_id").isNull()).build();
+        String query = QueryBuilder.select(Department.class).where(field("manager_id").isNull()).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -250,7 +249,7 @@ public class LayerIntegrationTest {
             assertThat(departments).usingRecursiveComparison().isEqualTo(List.of(Administration, Marketing, Purchasing, HR));
         }
 
-        query = QueryBuilder.select(Department.class).where(not(field("manager_id").isNull())).build();
+        query = QueryBuilder.select(Department.class).where(not(field("manager_id").isNull())).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -264,7 +263,7 @@ public class LayerIntegrationTest {
         String query = QueryBuilder.select(Department.class).where(
                 field("department_id").eq(
                         QueryBuilder.subQuery(Department.class, max(field("department_id"))))
-        ).build();
+        ).build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
@@ -283,7 +282,7 @@ public class LayerIntegrationTest {
                         .having(max(field("employees.employee_id").gt(lit(102))))
         ))
                 .orderBy(asc(field("department_id")))
-                .build();
+                .build(new ANSISQLDialect());
 
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
@@ -305,7 +304,7 @@ public class LayerIntegrationTest {
                 .groupBy(field("department_id"))
                 .having(max(field("employees.employee_id").gt(lit(102))))
                 .orderBy(desc(field("department_id")))
-                .build();
+                .build(new ANSISQLDialect());
         try (Statement stmt = conn.createStatement();
              java.sql.ResultSet rs = stmt.executeQuery(query)) {
 
