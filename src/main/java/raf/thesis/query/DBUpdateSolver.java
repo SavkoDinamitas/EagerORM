@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
-import raf.thesis.query.dialect.ANSISQLDialect;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.exceptions.EntityObjectRequiredForInsertionException;
 import raf.thesis.query.exceptions.IdInRelatedObjectsCantBeNullException;
+import raf.thesis.query.exceptions.MissingIdException;
 import raf.thesis.query.tree.Literal;
 
 import java.lang.reflect.Field;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
-public class InsertSolver {
+public class DBUpdateSolver {
     public Dialect dialect;
 
     public PreparedStatementQuery generateInsert(Object obj) {
@@ -110,6 +110,46 @@ public class InsertSolver {
             }
         }
         return queries;
+    }
+
+    public PreparedStatementQuery updateObject(Object object, boolean ignoreNulls){
+        EntityMetadata meta = MetadataStorage.get(object.getClass());
+        List<String> columnNames = new ArrayList<>();
+        List<String> keyColumnNames = new ArrayList<>();
+        List<Literal> columnValues = new ArrayList<>();
+        List<Literal> keyColumnValues = new ArrayList<>();
+
+        for(var col : meta.getColumns().values()){
+            //PK field
+            if(meta.getIdFields().contains(col.getField())){
+                keyColumnNames.add(col.getColumnName());
+                Literal value;
+                try {
+                   value = makeLiteral(col.getField().get(object));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                if(value instanceof Literal.NullCnst)
+                    throw new MissingIdException("Given object: " + object + "has no set primary keys!");
+                keyColumnValues.add(value);
+            }
+            //normal column
+            else{
+                columnNames.add(col.getColumnName());
+                Literal value;
+                try {
+                    value = makeLiteral(col.getField().get(object));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                if(value instanceof Literal.NullCnst && ignoreNulls)
+                    columnNames.removeLast();
+                else
+                    columnValues.add(value);
+            }
+        }
+        columnValues.addAll(keyColumnValues);
+        return new PreparedStatementQuery(dialect.generateUpdateClause(columnNames, meta.getTableName(), keyColumnNames), columnValues);
     }
 
     private void getKeyValues(EntityMetadata meta, Object obj, List<Literal> columnValues) {

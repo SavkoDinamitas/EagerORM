@@ -176,7 +176,35 @@ public class ANSISQLDialect implements Dialect {
 
     @Override
     public String generateInsertClause(List<String> columns, String tableName) {
-        return "INSERT INTO %s (%s) VALUES (%s)".formatted(tableName, generateInsertColumnParenthesis(columns), generateQuestionMarks(columns.size()));
+        return "INSERT INTO %s (%s) VALUES (%s);".formatted(tableName, generateInsertColumnParenthesis(columns), generateQuestionMarks(columns.size()));
+    }
+
+    @Override
+    public String generateUpdateClause(List<String> columns, String tableName, List<String> keyColumnNames) {
+        return "UPDATE %s\nSET %sWHERE %s;".formatted(tableName, generateSetClause(columns), generateUpdateWhereClause(keyColumnNames));
+    }
+
+    private String generateSetClause(List<String> columns){
+        StringBuilder result = new StringBuilder();
+        for(String column : columns){
+            result.append(column);
+            result.append(" = ?");
+            result.append(",\n");
+        }
+        result.delete(result.length()-2, result.length());
+        result.append("\n");
+        return result.toString();
+    }
+
+    private String generateUpdateWhereClause(List<String> keys){
+        StringBuilder result = new StringBuilder();
+        for(int i = 0; i < keys.size(); i++){
+            result.append(keys.get(i));
+            result.append(" = ?");
+            if(i != keys.size()-1)
+                result.append(" AND ");
+        }
+        return result.toString();
     }
 
     private String generateInsertColumnParenthesis(List<String> columns){

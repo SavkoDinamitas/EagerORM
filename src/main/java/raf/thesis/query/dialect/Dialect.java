@@ -35,4 +35,6 @@ public interface Dialect {
     String generateAliasedFieldExp(AliasedColumn column);
 
     String generateInsertClause(List<String> columns, String tableName);
+
+    String generateUpdateClause(List<String> columns, String tableName, List<String> keyColumnNames);
 }
