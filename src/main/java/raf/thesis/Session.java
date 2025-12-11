@@ -129,6 +129,11 @@ public class Session {
         executeUpdateStatement(delete);
     }
 
+    public void addRelation(Object obj1, Object obj2, String relationName) throws SQLException{
+        PreparedStatementQuery connect = DBUpdateSolver.connect(obj1, obj2, relationName);
+        executeUpdateStatement(connect);
+    }
+
     private void executeUpdateStatement(PreparedStatementQuery update) throws SQLException{
         Connection conn = connectionSupplier.getConnection();
         PreparedStatement preparedStatement = conn.prepareStatement(update.getQuery());

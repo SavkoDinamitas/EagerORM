@@ -3,11 +3,13 @@ package raf.thesis.query;
 import lombok.AllArgsConstructor;
 import raf.thesis.metadata.ColumnMetadata;
 import raf.thesis.metadata.EntityMetadata;
+import raf.thesis.metadata.RelationMetadata;
 import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.exceptions.EntityObjectRequiredForInsertionException;
 import raf.thesis.query.exceptions.IdInRelatedObjectsCantBeNullException;
+import raf.thesis.query.exceptions.InvalidRelationPathException;
 import raf.thesis.query.exceptions.MissingIdException;
 import raf.thesis.query.tree.Literal;
 
@@ -15,10 +17,7 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @AllArgsConstructor
 public class DBUpdateSolver {
@@ -141,7 +140,7 @@ public class DBUpdateSolver {
             }
         }
         columnValues.addAll(keyColumnValues);
-        return new PreparedStatementQuery(dialect.generateUpdateClause(columnNames, meta.getTableName(), keyColumnNames), columnValues);
+        return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
     }
 
     public PreparedStatementQuery deleteObject(Object obj){
@@ -155,7 +154,60 @@ public class DBUpdateSolver {
                 extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, obj);
             }
         }
-        return new PreparedStatementQuery(dialect.generateDeleteClause(keyColumnNames, meta.getTableName()), keyColumnValues);
+        return new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumnNames, meta.getTableName()), keyColumnValues);
+    }
+
+    public PreparedStatementQuery connect(Object obj1, Object obj2, String relationName){
+        EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
+        EntityMetadata meta2 = MetadataStorage.get(obj2.getClass());
+
+        Optional<RelationMetadata> relationOp = meta1.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
+        if(relationOp.isEmpty())
+            throw new InvalidRelationPathException("Given relation name doesn't exist in object: " + obj1);
+        RelationMetadata rel = relationOp.get();
+
+        //case MANY-TO-ONE and ONE-TO-ONE -> update foreign key in obj1 table
+        if(rel.getRelationType() == RelationType.MANY_TO_ONE || rel.getRelationType() == RelationType.ONE_TO_ONE){
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta1));
+            getKeyValues(meta2, obj2, columnValues);
+            getKeyValues(meta1, obj1, columnValues);
+            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+        }
+        //case ONE-TO-MANY -> update foreign key in obj2 table
+        if(rel.getRelationType() == RelationType.ONE_TO_MANY){
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta2));
+            getKeyValues(meta1, obj1, columnValues);
+            getKeyValues(meta2, obj2, columnValues);
+            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+        }
+        //case MANY-TO-MANY -> insert both keys in joined table
+        List<String> columnNames = new ArrayList<>(rel.getMyJoinedTableFks());
+        columnNames.addAll(rel.getForeignKeyNames());
+        List<Literal> columnValues = new ArrayList<>();
+        getKeyValues(meta1, obj1, columnValues);
+        getKeyValues(meta2, obj2, columnValues);
+        return new PreparedStatementQuery(dialect.generateInsertClause(columnNames, rel.getJoinedTableName()), columnValues);
+    }
+
+    //returns the list of columns that are primary keys in given entity
+    private List<String> extractKeys(EntityMetadata metadata){
+        List<String> keys = new ArrayList<>();
+        for(var column : metadata.getColumns().values()){
+            if(metadata.getIdFields().contains(column.getField())){
+                keys.add(column.getColumnName());
+            }
+        }
+        return keys;
     }
 
     private void extractColumnNameAndValue(List<String> columnNames, List<Literal> columnValues, ColumnMetadata col, Object instance){
