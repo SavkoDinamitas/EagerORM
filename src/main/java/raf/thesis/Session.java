@@ -5,13 +5,12 @@ import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.metadata.storage.MetadataStorage;
-import raf.thesis.query.ConditionBuilder;
 import raf.thesis.query.DBUpdateSolver;
 import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.QueryBuilder;
 import raf.thesis.query.dialect.ANSISQLDialect;
 import raf.thesis.query.dialect.Dialect;
-import raf.thesis.query.exceptions.EntityObjectRequiredForInsertionException;
+import raf.thesis.query.exceptions.EntityObjectRequiredException;
 import raf.thesis.query.tree.Literal;
 
 import java.sql.*;
@@ -129,9 +128,20 @@ public class Session {
         executeUpdateStatement(delete);
     }
 
-    public void addRelation(Object obj1, Object obj2, String relationName) throws SQLException{
+    public void connectRows(Object obj1, Object obj2, String relationName) throws SQLException{
         PreparedStatementQuery connect = DBUpdateSolver.connect(obj1, obj2, relationName);
         executeUpdateStatement(connect);
+    }
+
+    //only for MANY-TO-ONE and ONE-TO-ONE relations
+    public void disconnectRow(Object obj1, String relationName) throws SQLException{
+        PreparedStatementQuery disconnect = DBUpdateSolver.disconnect(obj1, null, relationName);
+        executeUpdateStatement(disconnect);
+    }
+    //only for MANY-TO-MANY and ONE-TO-MANY relations
+    public void disconnectRows(Object obj1, Object obj2, String relationName) throws SQLException{
+        PreparedStatementQuery disconnect = DBUpdateSolver.disconnect(obj1, obj2, relationName);
+        executeUpdateStatement(disconnect);
     }
 
     private void executeUpdateStatement(PreparedStatementQuery update) throws SQLException{
@@ -147,7 +157,7 @@ public class Session {
     private String[] extractKeys(Object obj){
         EntityMetadata metadata = MetadataStorage.get(obj.getClass());
         if(metadata == null)
-            throw new EntityObjectRequiredForInsertionException("Given object: " + obj.getClass().getName() + " is not an entity");
+            throw new EntityObjectRequiredException("Given object: " + obj.getClass().getName() + " is not an entity");
 
         String[] keys = new String[metadata.getIdFields().size()];
         int i = 0;
