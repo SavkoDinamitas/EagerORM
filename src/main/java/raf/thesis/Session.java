@@ -85,7 +85,7 @@ public class Session {
         return result;
     }
 
-    public void insert(Object obj) throws SQLException {
+    public <T> T insert(T obj) throws SQLException {
         Connection conn = connectionSupplier.getConnection();
 
         PreparedStatementQuery mainInsert = DBUpdateSolver.generateInsert(obj);
@@ -94,8 +94,9 @@ public class Session {
             bindLiteral(preparedStatement, i, mainInsert.getArguments().get(i - 1));
         }
         preparedStatement.executeUpdate();
+        //in case of generated keys, map the returned keys on instance
         ResultSet rs = preparedStatement.getGeneratedKeys();
-        Object keysObject = rowMapper.map(rs, obj);
+        T keysObject = rowMapper.map(rs, obj);
 
         //solve many-to-many relationships
         List<PreparedStatementQuery> queries = DBUpdateSolver.generateManyToManyInserts(keysObject);
@@ -110,6 +111,7 @@ public class Session {
             ps.executeUpdate();
         }
         conn.close();
+        return keysObject;
     }
 
     public void update(Object obj) throws SQLException{
