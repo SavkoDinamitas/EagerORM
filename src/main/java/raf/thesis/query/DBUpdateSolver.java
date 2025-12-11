@@ -73,7 +73,7 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(dialect.generateInsertClause(columnNames, meta.getTableName()), columnValues);
     }
 
-    public List<PreparedStatementQuery> generateManyToManyInserts(Object obj, Object returnedKeys) {
+    public List<PreparedStatementQuery> generateManyToManyInserts(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
         if (meta == null)
@@ -98,8 +98,8 @@ public class DBUpdateSolver {
                 cols.addAll(relation.getForeignKeyNames());
                 for(var instance : relatedObjectList){
                     List<Literal> colValues = new ArrayList<>();
-                    //fill values for my entity
-                    getKeyValues(meta, returnedKeys, colValues);
+                    //fill values for my entity, use the object got from returning keyword in original insert to cover generated id case
+                    getKeyValues(meta, obj, colValues);
 
                     //fill values for related entity
                     EntityMetadata relationEntity = MetadataStorage.get(instance.getClass());

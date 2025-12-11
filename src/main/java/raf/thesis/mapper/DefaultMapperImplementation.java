@@ -27,6 +27,11 @@ public class DefaultMapperImplementation implements RowMapper {
     }
 
     @Override
+    public <T> T map(ResultSet rs, T instance){
+        return singleRowMap(rs, instance);
+    }
+
+    @Override
     public <T> List<T> mapList(ResultSet rs, Class<T> clazz) {
         List<T> instances = new ArrayList<>();
         try {
@@ -176,18 +181,22 @@ public class DefaultMapperImplementation implements RowMapper {
         EntityMetadata entityMetadata = MetadataStorage.get(clazz);
 
         if (entityMetadata == null) {
-            //TODO: map custom objects from ResultSet
             return null;
         }
 
-        //for each column in result set, find the designated field
-        // and do the conversion to java datatype
+
         T instance;
         try {
             instance = clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new ClassInstantiationException(e);
         }
+        return singleRowMap(rs, instance);
+    }
+
+    private <T> T singleRowMap(ResultSet rs, T instance){
+        //for each column in result set, find the designated field
+        // and do the conversion to java datatype
         try {
             ResultSetMetaData rsMeta = rs.getMetaData();
             int columnCount = rsMeta.getColumnCount();

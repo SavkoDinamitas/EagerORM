@@ -6,6 +6,8 @@ import java.util.List;
 public interface RowMapper {
     <T> T map(ResultSet rs, Class<T> clazz);
 
+    <T> T map(ResultSet rs, T instance);
+
     <T> List<T> mapList(ResultSet rs, Class<T> clazz);
 
     <T> List<T> mapWithRelations(ResultSet rs, Class<T> clazz);

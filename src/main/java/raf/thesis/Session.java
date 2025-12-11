@@ -95,10 +95,10 @@ public class Session {
         }
         preparedStatement.executeUpdate();
         ResultSet rs = preparedStatement.getGeneratedKeys();
-        Object keysObject = rowMapper.map(rs, obj.getClass());
+        Object keysObject = rowMapper.map(rs, obj);
 
         //solve many-to-many relationships
-        List<PreparedStatementQuery> queries = DBUpdateSolver.generateManyToManyInserts(obj, keysObject);
+        List<PreparedStatementQuery> queries = DBUpdateSolver.generateManyToManyInserts(keysObject);
 
         //go in reverse as last element in list is the main insert, others are many to many inserts
         for(int k = queries.size() - 1; k >= 0; k--) {
