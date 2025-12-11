@@ -184,6 +184,11 @@ public class ANSISQLDialect implements Dialect {
         return "UPDATE %s\nSET %sWHERE %s;".formatted(tableName, generateSetClause(columns), generateUpdateWhereClause(keyColumnNames));
     }
 
+    @Override
+    public String generateDeleteClause(List<String> keyColumnNames, String tableName) {
+        return "DELETE FROM %s\nWHERE %s;".formatted(tableName, generateUpdateWhereClause(keyColumnNames));
+    }
+
     private String generateSetClause(List<String> columns){
         StringBuilder result = new StringBuilder();
         for(String column : columns){

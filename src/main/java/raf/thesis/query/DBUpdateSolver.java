@@ -1,6 +1,7 @@
 package raf.thesis.query;
 
 import lombok.AllArgsConstructor;
+import raf.thesis.metadata.ColumnMetadata;
 import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
@@ -122,16 +123,7 @@ public class DBUpdateSolver {
         for(var col : meta.getColumns().values()){
             //PK field
             if(meta.getIdFields().contains(col.getField())){
-                keyColumnNames.add(col.getColumnName());
-                Literal value;
-                try {
-                   value = makeLiteral(col.getField().get(object));
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                if(value instanceof Literal.NullCnst)
-                    throw new MissingIdException("Given object: " + object + "has no set primary keys!");
-                keyColumnValues.add(value);
+                extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, object);
             }
             //normal column
             else{
@@ -150,6 +142,33 @@ public class DBUpdateSolver {
         }
         columnValues.addAll(keyColumnValues);
         return new PreparedStatementQuery(dialect.generateUpdateClause(columnNames, meta.getTableName(), keyColumnNames), columnValues);
+    }
+
+    public PreparedStatementQuery deleteObject(Object obj){
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        List<String> keyColumnNames = new ArrayList<>();
+        List<Literal> keyColumnValues = new ArrayList<>();
+
+        for(var col : meta.getColumns().values()) {
+            //PK field
+            if (meta.getIdFields().contains(col.getField())) {
+                extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, obj);
+            }
+        }
+        return new PreparedStatementQuery(dialect.generateDeleteClause(keyColumnNames, meta.getTableName()), keyColumnValues);
+    }
+
+    private void extractColumnNameAndValue(List<String> columnNames, List<Literal> columnValues, ColumnMetadata col, Object instance){
+        columnNames.add(col.getColumnName());
+        Literal value;
+        try {
+            value = makeLiteral(col.getField().get(instance));
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        if (value instanceof Literal.NullCnst)
+            throw new MissingIdException("Given object: " + instance + "has no set primary keys!");
+        columnValues.add(value);
     }
 
     private void getKeyValues(EntityMetadata meta, Object obj, List<Literal> columnValues) {

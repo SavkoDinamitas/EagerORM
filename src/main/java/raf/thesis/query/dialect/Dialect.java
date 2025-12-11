@@ -37,4 +37,6 @@ public interface Dialect {
     String generateInsertClause(List<String> columns, String tableName);
 
     String generateUpdateClause(List<String> columns, String tableName, List<String> keyColumnNames);
+
+    String generateDeleteClause(List<String> keyColumnNames, String tableName);
 }

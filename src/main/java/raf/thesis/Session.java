@@ -122,6 +122,11 @@ public class Session {
         executeUpdateStatement(update);
     }
 
+    public void delete(Object obj) throws SQLException{
+        PreparedStatementQuery delete = DBUpdateSolver.deleteObject(obj);
+        executeUpdateStatement(delete);
+    }
+
     private void executeUpdateStatement(PreparedStatementQuery update) throws SQLException{
         Connection conn = connectionSupplier.getConnection();
         PreparedStatement preparedStatement = conn.prepareStatement(update.getQuery());
