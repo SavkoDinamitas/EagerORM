@@ -216,4 +216,26 @@ public class SessionTest {
         Employee expected = session.executeSelect(qb, Employee.class).getFirst();
         assertThat(expected).usingRecursiveComparison().isEqualTo(me);
     }
+
+    @Test
+    void testTransactionRollbackOnFailure() throws SQLException {
+        Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
+        try{
+            session.transaction((_ -> {
+                session.insert(me);
+                Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+                session.delete(Bruce);
+            }));
+        }catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        QueryBuilder qb = QueryBuilder.select(Employee.class);
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+        Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+        Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+        Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+        assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex, Alexander, Bruce));
+    }
 }
