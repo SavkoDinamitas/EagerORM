@@ -1,5 +1,6 @@
 import layering.Department;
 import layering.Employee;
+import layering.Performance;
 import layering.Project;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +63,21 @@ public class SessionTest {
                 .where(field("employee_id").eq(lit(105)));
         List<Employee> employees = session.executeSelect(qb, Employee.class);
         assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(me);
+    }
+
+    @Test
+    void testInsertWithOneToOneRelations() throws SQLException{
+        Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
+        session.insert(me);
+        Performance performance = new Performance(6, 9.1, me);
+        session.insert(performance);
+        QueryBuilder qb = QueryBuilder.select(Employee.class)
+                .join("performance")
+                .join("performance.employee")
+                .where(field("employee_id").eq(lit(105)));
+        me.setPerformance(performance);
+        Employee expected = session.executeSelect(qb, Employee.class).getFirst();
+        assertThat(expected).usingRecursiveComparison().isEqualTo(me);
     }
 
     @Test
@@ -169,6 +185,28 @@ public class SessionTest {
     }
 
     @Test
+    void testOneToOneDisconnect() throws SQLException{
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        Performance performance = new Performance();
+        performance.setPerformanceId(1);
+        session.disconnectRows(Steven, performance, "performance");
+        QueryBuilder qb = QueryBuilder.select(Employee.class)
+                .join("performance")
+                .where(field("employee_id").eq(lit(100)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        assertTrue(employees.isEmpty());
+
+        Performance performance2 = new Performance();
+        performance2.setPerformanceId(2);
+        session.disconnectRow(performance2, "employee");
+        qb = QueryBuilder.select(Employee.class)
+                .join("performance")
+                .where(field("employee_id").eq(lit(101)));
+        employees = session.executeSelect(qb, Employee.class);
+        assertTrue(employees.isEmpty());
+    }
+
+    @Test
     void testOtherRelationDisconnect() throws SQLException {
         Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
         Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
@@ -197,6 +235,26 @@ public class SessionTest {
                 .orderBy(asc(field("projects.project_id")));
         Employee expected = session.executeSelect(qb, Employee.class).getFirst();
         assertThat(expected).usingRecursiveComparison().isEqualTo(Bruce);
+    }
+
+    @Test
+    void testOneToOneConnect() throws SQLException{
+        Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
+        session.insert(me);
+        Performance performance = new Performance(6, 9.9);
+        session.insert(performance);
+        session.connectRows(me, performance, "performance");
+        QueryBuilder qb = QueryBuilder.select(Employee.class)
+                .join("performance")
+                .where(field("employee_id").eq(lit(105)));
+        Employee expected = session.executeSelect(qb, Employee.class).getFirst();
+        me.setPerformance(performance);
+        assertThat(expected).usingRecursiveComparison().isEqualTo(me);
+
+        session.disconnectRow(performance, "employee");
+        session.connectRows(performance, me, "employee");
+        expected = session.executeSelect(qb, Employee.class).getFirst();
+        assertThat(expected).usingRecursiveComparison().isEqualTo(me);
     }
 
     @Test

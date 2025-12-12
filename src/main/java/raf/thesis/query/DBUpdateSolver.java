@@ -195,7 +195,7 @@ public class DBUpdateSolver {
 
         Optional<RelationMetadata> relationOp = meta1.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
         if (relationOp.isEmpty())
-            throw new InvalidRelationPathException("Given relation name doesn't exist in object: " + obj1);
+            throw new InvalidRelationPathException("Given relation name" + relationName + "doesn't exist in object: " + obj1);
         RelationMetadata rel = relationOp.get();
 
         //case MANY-TO-ONE and ONE-TO-ONE with containsFK = true -> remove foreign key in obj1 table

@@ -30,6 +30,8 @@ public class Employee {
     private Employee manager;
     @ManyToOne
     private Department department;
+    @OneToOne(containsFk = false)
+    private Performance performance;
 
     public Employee(int employeeId, String firstName, String lastName, LocalDate hireDate) {
         this.employeeId = employeeId;

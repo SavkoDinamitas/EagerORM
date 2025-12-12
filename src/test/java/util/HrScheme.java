@@ -92,6 +92,7 @@ public class HrScheme {
             ------------------------------------------------------------
             -- DROP TABLES (to allow re-running)
             ------------------------------------------------------------
+            DROP TABLE IF EXISTS performances;
             DROP TABLE IF EXISTS employee_projects;
             DROP TABLE IF EXISTS projects;
             DROP TABLE IF EXISTS job_history;
@@ -272,6 +273,20 @@ public class HrScheme {
             -- Bruce Ernst – works on payroll & mobile
             INSERT INTO employee_projects VALUES (104, 2);
             INSERT INTO employee_projects VALUES (104, 4);
+            -- ==============================
+            --  PERFORMANCES (new table)
+            -- ==============================
+            CREATE TABLE performances (
+                performance_id INT PRIMARY KEY,
+                performance_score DOUBLE,
+                employee_id INT UNIQUE,
+                FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE ON UPDATE CASCADE
+            );
+            INSERT INTO performances VALUES (1, 9.5, 100);
+            INSERT INTO performances VALUES (2, 8.1, 101);
+            INSERT INTO performances VALUES (3, 6, 102);
+            INSERT INTO performances VALUES (4, 7.8, 103);
+            INSERT INTO performances VALUES (5, 10, 104);
             """;
 
     public static void fillMetadataManually() throws NoSuchFieldException {
