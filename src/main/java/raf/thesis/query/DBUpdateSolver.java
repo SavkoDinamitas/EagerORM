@@ -75,11 +75,10 @@ public class DBUpdateSolver {
             Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
             if (relatedObject == null)
                 continue;
-            if (!(relatedObject instanceof List<?> relatedObjectList))
-                throw new IllegalStateException("Scanner should have already prevented this");
-
 
             if (relation.getRelationType() == RelationType.MANY_TO_MANY) {
+                if (!(relatedObject instanceof List<?> relatedObjectList))
+                    throw new IllegalStateException("Scanner should have already prevented this");
                 List<String> cols = new ArrayList<>();
                 cols.addAll(relation.getMyJoinedTableFks());
                 cols.addAll(relation.getForeignKeyNames());
