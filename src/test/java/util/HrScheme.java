@@ -232,7 +232,7 @@ public class HrScheme {
             --  PROJECTS (new table)
             -- ==============================
             CREATE TABLE projects (
-                project_id INT PRIMARY KEY,
+                project_id INT PRIMARY KEY AUTO_INCREMENT,
                 project_name VARCHAR(100) NOT NULL
             );
             
@@ -242,7 +242,8 @@ public class HrScheme {
                 (3, 'Corporate Website Redesign'),
                 (4, 'Mobile Sales Dashboard'),
                 (5, 'Cloud Migration Initiative');
-
+            
+            ALTER TABLE projects ALTER COLUMN project_id RESTART WITH 6;
             -- ==============================
             --  EMPLOYEE_PROJECTS (junction table, N:M)
             -- ==============================

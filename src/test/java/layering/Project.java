@@ -17,7 +17,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 public class Project {
-    @Id
+    @Id(generated = true)
     @Column(columnName = "project_id")
     private int projectId;
     @Column(columnName = "project_name")
