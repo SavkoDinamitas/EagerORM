@@ -38,6 +38,7 @@ public class SessionTest {
         }
     }
 
+    //insert tests
     @Test
     void testSimpleInsert() throws SQLException {
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
@@ -105,6 +106,7 @@ public class SessionTest {
         assertThat(projects.getFirst()).usingRecursiveComparison().isEqualTo(myProject);
     }
 
+    //update tests
     @Test
     void testUpdate() throws SQLException {
         Employee Steven = new Employee(100, "Salko", "Dinamitas", LocalDate.of(2005, 6, 27));
@@ -126,5 +128,57 @@ public class SessionTest {
         List<Employee> employees = session.executeSelect(qb, Employee.class);
         Employee expected = new Employee(100, "Salko", "King", LocalDate.of(2003, 6, 17));
         assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(expected);
+    }
+
+    //test delete objects and relations
+    @Test
+    void testDelete() throws SQLException {
+        Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
+        session.insert(me);
+        QueryBuilder qb = QueryBuilder.select(Employee.class);
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+        Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+        Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+        Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+        //check insert success
+        assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex, Alexander, Bruce, me));
+        session.delete(me);
+        employees = session.executeSelect(qb, Employee.class);
+        //check delete success
+        assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex, Alexander, Bruce));
+    }
+
+    @Test
+    void testManyToManyDisconnect() throws SQLException {
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+        Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+        Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+        Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+        Project Payrol = new Project(2, "Internal Payroll Platform");
+        Project Mobile = new Project(4, "Mobile Sales Dashboard");
+        //clear constraining relations for Bruce
+        session.disconnectRows(Bruce, Payrol, "projects");
+        session.disconnectRows(Mobile, Bruce, "employees");
+        session.delete(Bruce);
+        QueryBuilder qb = QueryBuilder.select(Employee.class);
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex, Alexander));
+    }
+
+    @Test
+    void testOtherRelationDisconnect() throws SQLException {
+        Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+        Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+        Department Marketing = new Department(20, "Marketing");
+        session.disconnectRow(Neena, "department");
+        session.disconnectRows(Marketing, Bruce, "employees");
+        QueryBuilder qb = QueryBuilder.select(Department.class)
+                .join("employees")
+                .where(field("department_id").eq(lit(20)));
+        List<Department> departments = session.executeSelect(qb, Department.class);
+        assertTrue(departments.isEmpty());
     }
 }
