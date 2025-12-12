@@ -107,6 +107,7 @@ public class Session {
             preparedStatement.executeUpdate();
             //in case of generated keys, map the returned keys on instance
             ResultSet rs = preparedStatement.getGeneratedKeys();
+            rs.next();
             T keysObject = rowMapper.map(rs, obj);
 
             //solve many-to-many relationships
