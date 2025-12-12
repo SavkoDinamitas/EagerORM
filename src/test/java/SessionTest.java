@@ -104,4 +104,27 @@ public class SessionTest {
         List<Project> projects = session.executeSelect(qb, Project.class);
         assertThat(projects.getFirst()).usingRecursiveComparison().isEqualTo(myProject);
     }
+
+    @Test
+    void testUpdate() throws SQLException {
+        Employee Steven = new Employee(100, "Salko", "Dinamitas", LocalDate.of(2005, 6, 27));
+        session.update(Steven);
+        QueryBuilder qb = QueryBuilder.select(Employee.class)
+                .where(field("employee_id").eq(lit(100)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(Steven);
+    }
+
+    @Test
+    void testUpdateWithIgnoreNull() throws SQLException {
+        Employee Steven = new Employee();
+        Steven.setEmployeeId(100);
+        Steven.setFirstName("Salko");
+        session.update(Steven, Session.IGNORE_NULL);
+        QueryBuilder qb = QueryBuilder.select(Employee.class)
+                .where(field("employee_id").eq(lit(100)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        Employee expected = new Employee(100, "Salko", "King", LocalDate.of(2003, 6, 17));
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(expected);
+    }
 }
