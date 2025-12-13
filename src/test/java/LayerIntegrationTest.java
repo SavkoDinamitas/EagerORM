@@ -5,6 +5,7 @@ import layering.Project;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import raf.thesis.ConnectionSupplier;
 import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.scan.MetadataScanner;
@@ -12,6 +13,7 @@ import raf.thesis.query.Join;
 import raf.thesis.query.QueryBuilder;
 import raf.thesis.query.dialect.ANSISQLDialect;
 import util.H2HRProvider;
+import util.multidb.MultiDBTest;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -22,10 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static raf.thesis.query.ConditionBuilder.*;
 
-@ExtendWith(H2HRProvider.class)
+@SuppressWarnings("JUnitMalformedDeclaration")
+@MultiDBTest
 public class LayerIntegrationTest {
-    private Connection conn;
     private static final RowMapper rowMapper = new DefaultMapperImplementation();
+
     @BeforeAll
     static void fillMetadata() throws SQLException, NoSuchFieldException {
         MetadataScanner ms = new MetadataScanner();
@@ -33,10 +36,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testSimpleJoinIntegrationTest() throws SQLException {
+    void testSimpleJoinIntegrationTest(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Department.class).join("employees").build(new ANSISQLDialect());
         System.out.println(query);
-        try (Statement stmt = conn.createStatement();
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             // Check if a row was returned
@@ -60,10 +64,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testLeftJoinIntegrationTest() throws SQLException {
+    void testLeftJoinIntegrationTest(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Department.class).join("employees", Join.LEFT).build(new ANSISQLDialect());
         System.out.println(query);
-        try (Statement stmt = conn.createStatement();
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             // Check if a row was returned
@@ -88,15 +93,16 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testManyToManyJoinIntegrationTest() throws SQLException {
+    void testManyToManyJoinIntegrationTest(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Project.class)
                 .join("employees")
                 .join("employees.projects")
-                .orderBy(asc(field("project_id")))
+                .orderBy(asc(field("project_id")), asc(field("employees.employee_id")))
                 .build(new ANSISQLDialect());
         System.out.println(query);
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             //map result set of single join query
             List<Project> projects = rowMapper.mapWithRelations(rs, Project.class);
@@ -133,10 +139,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testRecursiveMultiJoinIntegrationTest() throws SQLException {
+    void testRecursiveMultiJoinIntegrationTest(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Employee.class).join("department").join("manager").join("department.employees").build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             assertFalse(employees.isEmpty());
@@ -144,10 +151,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testLikeIntegration() throws SQLException {
+    void testLikeIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -157,10 +165,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testInIntegration() throws SQLException {
+    void testInIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -171,10 +180,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testDateLiteralIntegration() throws SQLException {
+    void testDateLiteralIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -184,13 +194,14 @@ public class LayerIntegrationTest {
         }
 
         query = QueryBuilder.select(Employee.class).where(field("hire_date").in(
-                tuple(
-                        lit(LocalDate.of(2003, 6, 17)),
-                        lit(LocalDate.of(2005, 9, 21)),
-                        lit(LocalDate.of(2001, 1, 13)))))
+                        tuple(
+                                lit(LocalDate.of(2003, 6, 17)),
+                                lit(LocalDate.of(2005, 9, 21)),
+                                lit(LocalDate.of(2001, 1, 13)))))
                 .build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -201,16 +212,17 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testLogicalOpIntegration() throws SQLException {
+    void testLogicalOpIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Employee.class).where(
-                and(
-                        not(field("first_name").eq(lit("Alexander"))),
-                        not(field("first_name").eq(lit("Lex"))),
-                        not(field("first_name").eq(lit("Bruce")))
-                ))
+                        and(
+                                not(field("first_name").eq(lit("Alexander"))),
+                                not(field("first_name").eq(lit("Lex"))),
+                                not(field("first_name").eq(lit("Bruce")))
+                        ))
                 .build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -224,8 +236,9 @@ public class LayerIntegrationTest {
                                 field("first_name").eq(lit("Lex"))
                         ))
                 .build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -236,10 +249,11 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testIsNullIntegration() throws SQLException {
+    void testIsNullIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Department.class).where(field("manager_id").isNull()).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             Department Administration = new Department(10, "Administration");
@@ -250,8 +264,9 @@ public class LayerIntegrationTest {
         }
 
         query = QueryBuilder.select(Department.class).where(not(field("manager_id").isNull())).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             assertTrue(departments.isEmpty());
@@ -259,13 +274,14 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testSimpleSubqueryIntegration() throws SQLException {
+    void testSimpleSubqueryIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Department.class).where(
                 field("department_id").eq(
                         QueryBuilder.subQuery(Department.class, max(field("department_id"))))
         ).build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             Department HR = new Department(40, "Human Resources");
@@ -274,18 +290,19 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testGroupByAndHavingClauseInSubqueryIntegration() throws SQLException {
+    void testGroupByAndHavingClauseInSubqueryIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(Department.class).where(field("department_id").in(
-                QueryBuilder.subQuery(Department.class, field("department_id"))
-                        .join("employees")
-                        .groupBy(field("department_id"))
-                        .having(max(field("employees.employee_id").gt(lit(102))))
-        ))
+                        QueryBuilder.subQuery(Department.class, field("department_id"))
+                                .join("employees")
+                                .groupBy(field("department_id"))
+                                .having(max(field("employees.employee_id")).gt(lit(102)))
+                ))
                 .orderBy(asc(field("department_id")))
                 .build(new ANSISQLDialect());
 
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             Department Marketing = new Department(20, "Marketing");
@@ -295,18 +312,19 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testPTOIntegration() throws SQLException{
+    void testPTOIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(
-                    Department.class,
-                    aliasedColumn(field("department_id"), "department_id"),
-                    aliasedColumn(max(field("employees.employee_id")), "maxEmployeeId"))
+                        Department.class,
+                        aliasedColumn(field("department_id"), "department_id"),
+                        aliasedColumn(max(field("employees.employee_id")), "maxEmployeeId"))
                 .join("employees")
                 .groupBy(field("department_id"))
-                .having(max(field("employees.employee_id").gt(lit(102))))
+                .having(max(field("employees.employee_id")).gt(lit(102)))
                 .orderBy(desc(field("department_id")))
                 .build(new ANSISQLDialect());
-        try (Statement stmt = conn.createStatement();
-             java.sql.ResultSet rs = stmt.executeQuery(query)) {
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
             List<DepartmentsWithMaxEmployeeIdPDO> d = rowMapper.mapList(rs, DepartmentsWithMaxEmployeeIdPDO.class);
             List<DepartmentsWithMaxEmployeeIdPDO> expected = new ArrayList<>();

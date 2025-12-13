@@ -2,46 +2,26 @@ import layering.Department;
 import layering.Employee;
 import layering.Performance;
 import layering.Project;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import raf.thesis.Session;
 import raf.thesis.query.QueryBuilder;
-import util.HrScheme;
+import util.multidb.MultiDBTest;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static raf.thesis.query.ConditionBuilder.*;
 
+@SuppressWarnings("JUnitMalformedDeclaration")
+@MultiDBTest
 public class SessionTest {
-    private static Session session;
-
-    @BeforeAll
-    public static void setUp() throws SQLException {
-        session = new Session(() -> DriverManager.getConnection("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1", "sa", ""), "layering");
-    }
-
-    @BeforeEach
-    void cleanDb() throws SQLException {
-        Connection conn = DriverManager.getConnection("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1", "sa", "");
-        try (Statement stmt = conn.createStatement()) {
-            //noinspection SqlSourceToSinkFlow
-            stmt.execute(HrScheme.SCRIPT);
-        }
-    }
 
     //insert tests
     @Test
-    void testSimpleInsert() throws SQLException {
+    void testSimpleInsert(Session session) throws SQLException {
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
         session.insert(me);
         List<Employee> employees = session.executeSelect(QueryBuilder.select(Employee.class).where(field("employee_id").eq(lit(105))), Employee.class);
@@ -50,7 +30,7 @@ public class SessionTest {
     }
 
     @Test
-    void testInsertWithManyToOneRelations() throws SQLException {
+    void testInsertWithManyToOneRelations(Session session) throws SQLException {
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
         Department Marketing = new Department(20, "Marketing");
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
@@ -66,7 +46,7 @@ public class SessionTest {
     }
 
     @Test
-    void testInsertWithOneToOneRelations() throws SQLException{
+    void testInsertWithOneToOneRelations(Session session) throws SQLException{
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
         session.insert(me);
         Performance performance = new Performance(6, 9.1, me);
@@ -81,7 +61,7 @@ public class SessionTest {
     }
 
     @Test
-    void testInsertWithManyToManyRelations() throws SQLException {
+    void testInsertWithManyToManyRelations(Session session) throws SQLException {
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
         Department Marketing = new Department(20, "Marketing");
         Project Hr = new Project(1, "HR Onboarding System");
@@ -101,7 +81,7 @@ public class SessionTest {
     }
 
     @Test
-    void testInsertWithGeneratedPK() throws SQLException {
+    void testInsertWithGeneratedPK(Session session) throws SQLException {
         Project myProject = new Project();
         myProject.setProjectName("myProject");
         Project p = session.insert(myProject);
@@ -109,7 +89,7 @@ public class SessionTest {
     }
 
     @Test
-    void testInsertWithGeneratedPKAndManyToManyRelation() throws SQLException {
+    void testInsertWithGeneratedPKAndManyToManyRelation(Session session) throws SQLException {
         Project myProject = new Project();
         myProject.setProjectName("myProject");
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -124,7 +104,7 @@ public class SessionTest {
 
     //update tests
     @Test
-    void testUpdate() throws SQLException {
+    void testUpdate(Session session) throws SQLException {
         Employee Steven = new Employee(100, "Salko", "Dinamitas", LocalDate.of(2005, 6, 27));
         session.update(Steven);
         QueryBuilder qb = QueryBuilder.select(Employee.class)
@@ -134,7 +114,7 @@ public class SessionTest {
     }
 
     @Test
-    void testUpdateWithIgnoreNull() throws SQLException {
+    void testUpdateWithIgnoreNull(Session session) throws SQLException {
         Employee Steven = new Employee();
         Steven.setEmployeeId(100);
         Steven.setFirstName("Salko");
@@ -148,7 +128,7 @@ public class SessionTest {
 
     //test delete objects and relations
     @Test
-    void testDelete() throws SQLException {
+    void testDelete(Session session) throws SQLException {
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
         session.insert(me);
         QueryBuilder qb = QueryBuilder.select(Employee.class);
@@ -167,7 +147,7 @@ public class SessionTest {
     }
 
     @Test
-    void testManyToManyDisconnect() throws SQLException {
+    void testManyToManyDisconnect(Session session) throws SQLException {
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
         Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
         Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
@@ -185,7 +165,7 @@ public class SessionTest {
     }
 
     @Test
-    void testOneToOneDisconnect() throws SQLException{
+    void testOneToOneDisconnect(Session session) throws SQLException{
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
         Performance performance = new Performance();
         performance.setPerformanceId(1);
@@ -207,7 +187,7 @@ public class SessionTest {
     }
 
     @Test
-    void testOtherRelationDisconnect() throws SQLException {
+    void testOtherRelationDisconnect(Session session) throws SQLException {
         Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
         Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
         Department Marketing = new Department(20, "Marketing");
@@ -222,7 +202,7 @@ public class SessionTest {
 
     //tests for connect
     @Test
-    void testManyToManyConnect() throws SQLException {
+    void testManyToManyConnect(Session session) throws SQLException {
         Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
         Project Hr = new Project(1, "HR Onboarding System");
         Project Payrol = new Project(2, "Internal Payroll Platform");
@@ -238,7 +218,7 @@ public class SessionTest {
     }
 
     @Test
-    void testOneToOneConnect() throws SQLException{
+    void testOneToOneConnect(Session session) throws SQLException{
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
         session.insert(me);
         Performance performance = new Performance(6, 9.9);
@@ -258,7 +238,7 @@ public class SessionTest {
     }
 
     @Test
-    void testOtherRelationsConnect() throws SQLException {
+    void testOtherRelationsConnect(Session session) throws SQLException {
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
         session.insert(me);
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -276,17 +256,13 @@ public class SessionTest {
     }
 
     @Test
-    void testTransactionRollbackOnFailure() throws SQLException {
+    void testTransactionRollbackOnFailure(Session session) throws SQLException {
         Employee me = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2002, 10, 10));
-        try{
-            session.transaction((_ -> {
+        assertThrows(SQLException.class, () -> session.transaction((_ -> {
                 session.insert(me);
                 Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
                 session.delete(Bruce);
-            }));
-        }catch (SQLException e){
-            System.out.println(e.getMessage());
-        }
+            })));
         QueryBuilder qb = QueryBuilder.select(Employee.class);
         List<Employee> employees = session.executeSelect(qb, Employee.class);
         Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
