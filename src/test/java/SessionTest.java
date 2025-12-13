@@ -85,7 +85,7 @@ public class SessionTest {
         Project myProject = new Project();
         myProject.setProjectName("myProject");
         Project p = session.insert(myProject);
-        assertEquals(p.getProjectId(), 6);
+        assertEquals(6, p.getProjectId());
     }
 
     @Test

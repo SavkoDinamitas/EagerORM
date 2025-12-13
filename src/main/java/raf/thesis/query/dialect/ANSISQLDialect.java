@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ANSISQLDialect implements Dialect {
-    private String quote(String value){
+    protected String quote(String value){
         return "\"" + value.replaceAll("\"", "\"\"") + "\"";
     }
 
@@ -178,6 +178,8 @@ public class ANSISQLDialect implements Dialect {
     public String generateInsertClause(List<String> columns, String tableName) {
         return "INSERT INTO %s (%s) VALUES (%s);".formatted(tableName, generateInsertColumnParenthesis(columns), generateQuestionMarks(columns.size()));
     }
+
+
 
     @Override
     public String generateUpdateQuery(List<String> columns, String tableName, List<String> keyColumnNames) {

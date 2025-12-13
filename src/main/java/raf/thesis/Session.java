@@ -10,6 +10,8 @@ import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.QueryBuilder;
 import raf.thesis.query.dialect.ANSISQLDialect;
 import raf.thesis.query.dialect.Dialect;
+import raf.thesis.query.dialect.MariaDBDialect;
+import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.exceptions.EntityObjectRequiredException;
 import raf.thesis.query.transaction.SQLTransactionBody;
 import raf.thesis.query.transaction.SQLValuedTransactionBody;
@@ -24,8 +26,8 @@ import java.util.Optional;
 public class Session {
     private final ConnectionSupplier connectionSupplier;
     private final RowMapper rowMapper = new DefaultMapperImplementation();
-    private final Dialect dialect = new ANSISQLDialect();
-    private final DBUpdateSolver DBUpdateSolver = new DBUpdateSolver(dialect);
+    private final Dialect dialect;
+    private final DBUpdateSolver DBUpdateSolver;
     private static final MetadataScanner metadataScanner = new MetadataScanner();
 
     private final ThreadLocal<Connection> activeConnection = new ThreadLocal<>();
@@ -33,6 +35,22 @@ public class Session {
     public Session(ConnectionSupplier connectionSupplier, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
         metadataScanner.discoverMetadata(scanPackages);
+        //detect which Dialect to use based on connection db
+        dialect = getDialect();
+        DBUpdateSolver = new DBUpdateSolver(dialect);
+    }
+
+    //detect database from connection
+    private Dialect getDialect(){
+        try(Connection conn = connectionSupplier.getConnection()){
+            String url = conn.getMetaData().getURL();
+            if(url.contains("mariadb"))
+                return new MariaDBDialect();
+            else
+                return new ANSISQLDialect();
+        } catch (SQLException e) {
+            throw new ConnectionUnavailableException("Given connection supplier doesn't supply connections!");
+        }
     }
 
     private <T> T runBody(SQLValuedTransactionBody<T> body) throws SQLException {
@@ -100,13 +118,24 @@ public class Session {
     public <T> T insert(T obj) throws SQLException {
         return runBody((conn -> {
             PreparedStatementQuery mainInsert = DBUpdateSolver.generateInsert(obj);
-            PreparedStatement preparedStatement = conn.prepareStatement(mainInsert.getQuery(), extractKeys(obj));
+            PreparedStatement preparedStatement;
+            //in case of MariaDB, use returnig to map generated keys
+            if(dialect instanceof MariaDBDialect mdb)
+                preparedStatement = conn.prepareStatement(mainInsert.getQuery().replace(";", mdb.generateReturningClause(extractKeys(obj))));
+            //in all other cases, use generatedKeys() as they return normal column labels
+            else
+                preparedStatement = conn.prepareStatement(mainInsert.getQuery(), extractKeys(obj));
             for (int i = 1; i <= mainInsert.getArguments().size(); i++) {
                 bindLiteral(preparedStatement, i, mainInsert.getArguments().get(i - 1));
             }
-            preparedStatement.executeUpdate();
-            //in case of generated keys, map the returned keys on instance
-            ResultSet rs = preparedStatement.getGeneratedKeys();
+            ResultSet rs;
+            if(dialect instanceof MariaDBDialect){
+                rs = preparedStatement.executeQuery();
+            }
+            else{
+                preparedStatement.executeUpdate();
+                rs = preparedStatement.getGeneratedKeys();
+            }
             rs.next();
             T keysObject = rowMapper.map(rs, obj);
 
