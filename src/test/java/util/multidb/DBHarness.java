@@ -53,6 +53,7 @@ public class DBHarness implements AutoCloseable{
             db.closeFunction().run();
         }
         PSQLContainer.close();
+        mariaDBContainer.close();
     }
 
     private DbUnderTest hikari(
