@@ -162,7 +162,7 @@ public class QueryBuilder {
      * @return built SQL query
      */
     public String build(Dialect dialect){
-        return generateSelectClause(dialect) + "\n" + generateJoinClauses(dialect) + generateWhereClause(dialect) + generateGroupByClause(dialect) + generateHavingClause(dialect) + generateOrderByClause(dialect) + ";";
+        return generateSelectClause(dialect) + "\n" + generateJoinClauses(dialect) + generateWhereClause(dialect) + generateGroupByClause(dialect) + generateHavingClause(dialect) + generateOrderByClause(dialect) + generateLimitClause(dialect) + ";";
     }
 
     private List<JoinNode> generateJoinNode(Class<?> root, String joiningRelationPath, Join joinType){
@@ -300,7 +300,11 @@ public class QueryBuilder {
     }
 
     public String generateOrderByClause(Dialect dialect){
-        return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes()) : "";
+        return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes()) + "\n" : "";
+    }
+
+    public String generateLimitClause(Dialect dialect){
+        return rootSelectNode.getLimitNode() != null ? dialect.generateLimitClause(rootSelectNode.getLimitNode()) : "";
     }
 
     public final Join LEFT = Join.LEFT;

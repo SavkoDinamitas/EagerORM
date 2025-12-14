@@ -79,7 +79,15 @@ public class ANSISQLDialect implements Dialect {
 
     @Override
     public String generateLimitClause(LimitNode limitNode) {
-        return "";
+        return "%s %s".formatted(generateOffset(limitNode.getOffset()), generateLimit(limitNode.getLimit()));
+    }
+
+    protected String generateOffset(Integer offset){
+        return offset == null ? "" : "OFFSET %s ROWS".formatted(offset);
+    }
+
+    protected String generateLimit(Integer limit){
+        return limit == null ? "" : "FETCH NEXT %s ROWS ONLY".formatted(limit);
     }
 
     @Override

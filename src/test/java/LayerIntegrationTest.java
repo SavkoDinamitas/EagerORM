@@ -32,10 +32,10 @@ import static raf.thesis.query.ConditionBuilder.*;
 public class LayerIntegrationTest {
     private static final RowMapper rowMapper = new DefaultMapperImplementation();
 
-    private Dialect getDialect(ConnectionSupplier connectionSupplier){
-        try(Connection conn = connectionSupplier.getConnection()){
+    private Dialect getDialect(ConnectionSupplier connectionSupplier) {
+        try (Connection conn = connectionSupplier.getConnection()) {
             String url = conn.getMetaData().getURL();
-            if(url.contains("mariadb"))
+            if (url.contains("mariadb"))
                 return new MariaDBDialect();
             else
                 return new ANSISQLDialect();
@@ -346,6 +346,49 @@ public class LayerIntegrationTest {
             expected.add(new DepartmentsWithMaxEmployeeIdPDO(30, 103));
             expected.add(new DepartmentsWithMaxEmployeeIdPDO(20, 104));
             assertThat(d).usingRecursiveComparison().isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void testOffset(ConnectionSupplier cp) throws SQLException {
+        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).offset(2).build(getDialect(cp));
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+            Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
+            List<Employee> expected = List.of(Lex, Alexander, Bruce);
+            assertThat(employees).usingRecursiveComparison().isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void testLimit(ConnectionSupplier cp) throws SQLException {
+        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).build(getDialect(cp));
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+            Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
+            List<Employee> expected = List.of(Steven, Neena);
+            assertThat(employees).usingRecursiveComparison().isEqualTo(expected);
+        }
+    }
+
+    @Test
+    void testLimitAndOffset(ConnectionSupplier cp) throws SQLException {
+        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).offset(2).build(getDialect(cp));
+        try (Connection conn = cp.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
+            Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
+            Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
+            List<Employee> expected = List.of(Lex, Alexander);
+            assertThat(employees).usingRecursiveComparison().isEqualTo(expected);
         }
     }
 }

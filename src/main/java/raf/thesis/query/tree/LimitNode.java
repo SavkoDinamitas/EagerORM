@@ -9,6 +9,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LimitNode {
-    private int limit;
-    private int offset;
+    private Integer limit;
+    private Integer offset;
 }
