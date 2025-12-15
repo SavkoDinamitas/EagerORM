@@ -266,16 +266,18 @@ public class DefaultMapperImplementation implements RowMapper {
         }
     }
 
+    private static final Map<Class<?>, Class<?>> primitiveTypes = Map.of(
+            boolean.class, Boolean.class,
+            byte.class, Byte.class,
+            char.class, Character.class,
+            short.class, Short.class,
+            int.class, Integer.class,
+            long.class, Long.class,
+            float.class, Float.class,
+            double.class, Double.class
+            );
+
     private Class<?> javaPrimitiveTypes(Class<?> clazz) {
-        Map<Class<?>, Class<?>> primitiveTypes = new HashMap<>();
-        primitiveTypes.put(boolean.class, Boolean.class);
-        primitiveTypes.put(byte.class, Byte.class);
-        primitiveTypes.put(char.class, Character.class);
-        primitiveTypes.put(short.class, Short.class);
-        primitiveTypes.put(int.class, Integer.class);
-        primitiveTypes.put(long.class, Long.class);
-        primitiveTypes.put(float.class, Float.class);
-        primitiveTypes.put(double.class, Double.class);
         return primitiveTypes.getOrDefault(clazz, clazz);
     }
 
