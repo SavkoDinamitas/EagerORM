@@ -7,12 +7,14 @@ import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.Join;
+import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.QueryBuilder;
 import raf.thesis.query.dialect.ANSISQLDialect;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.dialect.MSSQLServerDialect;
 import raf.thesis.query.dialect.MariaDBDialect;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
+import raf.thesis.query.tree.Literal;
 import util.H2HRProvider;
 import util.multidb.MultiDBTest;
 
@@ -172,10 +174,9 @@ public class LayerIntegrationTest {
 
     @Test
     void testLikeIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).where(field("last_name").like("K%")).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -186,10 +187,9 @@ public class LayerIntegrationTest {
 
     @Test
     void testInIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).where(field("first_name").in(tuple(lit("Steven"), lit("Neena"), lit("Lex")))).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -201,10 +201,9 @@ public class LayerIntegrationTest {
 
     @Test
     void testDateLiteralIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).where(field("hire_date").lt(lit(LocalDate.of(2005, 12, 4)))).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -218,10 +217,9 @@ public class LayerIntegrationTest {
                                 lit(LocalDate.of(2003, 6, 17)),
                                 lit(LocalDate.of(2005, 9, 21)),
                                 lit(LocalDate.of(2001, 1, 13)))))
-                .build(getDialect(cp));
+                .buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -246,16 +244,15 @@ public class LayerIntegrationTest {
 
     @Test
     void testLogicalOpIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).where(
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).where(
                         and(
                                 not(field("first_name").eq(lit("Alexander"))),
                                 not(field("first_name").eq(lit("Lex"))),
                                 not(field("first_name").eq(lit("Bruce")))
                         ))
-                .build(getDialect(cp));
+                .buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -268,10 +265,9 @@ public class LayerIntegrationTest {
                                 field("first_name").eq(lit("Neena")),
                                 field("first_name").eq(lit("Lex"))
                         ))
-                .build(getDialect(cp));
+                .buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
@@ -324,18 +320,17 @@ public class LayerIntegrationTest {
 
     @Test
     void testGroupByAndHavingClauseInSubqueryIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Department.class).where(field("department_id").in(
+        PreparedStatementQuery query = QueryBuilder.select(Department.class).where(field("department_id").in(
                         QueryBuilder.subQuery(Department.class, field("department_id"))
                                 .join("employees")
                                 .groupBy(field("department_id"))
                                 .having(max(field("employees.employee_id")).gt(lit(102)))
                 ))
                 .orderBy(asc(field("department_id")))
-                .build(getDialect(cp));
+                .buildPreparedStatement(getDialect(cp));
 
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<Department> departments = rowMapper.mapWithRelations(rs, Department.class);
             Department Marketing = new Department(20, "Marketing");
@@ -346,7 +341,7 @@ public class LayerIntegrationTest {
 
     @Test
     void testPDOIntegration(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(
+        PreparedStatementQuery query = QueryBuilder.select(
                         Department.class,
                         aliasedColumn(field("department_id"), "department_id"),
                         aliasedColumn(max(field("employees.employee_id")), "maxEmployeeId"))
@@ -354,10 +349,9 @@ public class LayerIntegrationTest {
                 .groupBy(field("department_id"))
                 .having(max(field("employees.employee_id")).gt(lit(102)))
                 .orderBy(desc(field("department_id")))
-                .build(getDialect(cp));
+                .buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
 
             List<DepartmentsWithMaxEmployeeIdPDO> d = rowMapper.mapList(rs, DepartmentsWithMaxEmployeeIdPDO.class);
             List<DepartmentsWithMaxEmployeeIdPDO> expected = new ArrayList<>();
@@ -369,10 +363,9 @@ public class LayerIntegrationTest {
 
     @Test
     void testOffset(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).offset(2).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).offset(2).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
             Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
@@ -384,10 +377,9 @@ public class LayerIntegrationTest {
 
     @Test
     void testLimit(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
             Employee Neena = new Employee(101, "Neena", "Kochhar", LocalDate.of(2005, 9, 21));
@@ -398,15 +390,37 @@ public class LayerIntegrationTest {
 
     @Test
     void testLimitAndOffset(ConnectionSupplier cp) throws SQLException {
-        String query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).offset(2).build(getDialect(cp));
+        PreparedStatementQuery query = QueryBuilder.select(Employee.class).orderBy(asc(field("employee_id"))).limit(2).offset(2).buildPreparedStatement(getDialect(cp));
         try (Connection conn = cp.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             ResultSet rs = executePreparedQuery(query, conn)) {
             List<Employee> employees = rowMapper.mapWithRelations(rs, Employee.class);
             Employee Lex = new Employee(102, "Lex", "De Haan", LocalDate.of(2001, 1, 13));
             Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
             List<Employee> expected = List.of(Lex, Alexander);
             assertThat(employees).usingRecursiveComparison().isEqualTo(expected);
+        }
+    }
+    //helper functions for prepared statements
+    private ResultSet executePreparedQuery(PreparedStatementQuery pq, Connection conn) throws SQLException {
+        PreparedStatement preparedStatement = conn.prepareStatement(pq.getQuery());
+        for (int i = 1; i <= pq.getArguments().size(); i++) {
+            bindLiteral(preparedStatement, i, pq.getArguments().get(i - 1));
+        }
+        return preparedStatement.executeQuery();
+    }
+
+    private void bindLiteral(PreparedStatement ps, int idx, Literal lit) throws SQLException {
+        switch (lit) {
+            case Literal.DoubleCnst d -> ps.setDouble(idx, d.x());
+            case Literal.LongCnst l -> ps.setLong(idx, l.x());
+            case Literal.StringCnst s -> ps.setString(idx, s.x());
+            case Literal.BoolCnst b -> ps.setBoolean(idx, b.x());
+            case Literal.DateCnst d -> ps.setDate(idx, java.sql.Date.valueOf(d.x()));
+            case Literal.DateTimeCnst dt -> ps.setTimestamp(idx, java.sql.Timestamp.valueOf(dt.x()));
+            case Literal.TimeCnst t -> ps.setTime(idx, java.sql.Time.valueOf(t.x()));
+            case Literal.NullCnst _ -> ps.setNull(idx, java.sql.Types.NULL);
+
+            default -> throw new IllegalArgumentException("Unsupported literal: " + lit.getClass());
         }
     }
 }
