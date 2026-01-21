@@ -345,7 +345,7 @@ public class LayerIntegrationTest {
     }
 
     @Test
-    void testPTOIntegration(ConnectionSupplier cp) throws SQLException {
+    void testPDOIntegration(ConnectionSupplier cp) throws SQLException {
         String query = QueryBuilder.select(
                         Department.class,
                         aliasedColumn(field("department_id"), "department_id"),
