@@ -89,7 +89,7 @@ public class ANSISQLDialect implements Dialect {
         else{
             //add literals to prepared statement arguments
             registerLiteral(new Literal.LongCnst(offset), args);
-            return "OFFSET ? ROWS";
+            return "OFFSET (?) ROWS";
         }
     }
 
@@ -99,7 +99,7 @@ public class ANSISQLDialect implements Dialect {
         }
         else{
             registerLiteral(new Literal.LongCnst(limit), args);
-            return "FETCH NEXT ? ROWS";
+            return "FETCH NEXT (?) ROWS ONLY";
         }
     }
 

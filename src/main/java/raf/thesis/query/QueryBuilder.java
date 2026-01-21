@@ -30,7 +30,7 @@ public class QueryBuilder {
 
     private boolean pdoQuery = false;
 
-    private List<Literal> queryArguments = new ArrayList<>();
+    protected List<Literal> queryArguments = new ArrayList<>();
 
     /**
      * Sets the root entity of the {@code QueryBuilder} to specify the type of object the query will return.

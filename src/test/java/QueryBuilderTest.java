@@ -67,7 +67,7 @@ public class QueryBuilderTest {
                         field("crewId").in(tuple(lit(1), lit(2), lit(3), lit(4)))
                 )
         ).generateWhereClause(new ANSISQLDialect());
-        assertEquals("WHERE ((\"%root\".crewSize) > (5)) AND (((\"%root\".crewSize) < (10)) AND ((\"%root\".crewId) IN (1,2,3,4)))\n", check);
+        assertEquals("WHERE ((\"%root\".crewSize) > (?)) AND (((\"%root\".crewSize) < (?)) AND ((\"%root\".crewId) IN (?,?,?,?)))\n", check);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class QueryBuilderTest {
         String check = QueryBuilder.select(Flight.class).where(
                 field("flightType").like("L%")
         ).generateWhereClause(new ANSISQLDialect());
-        assertEquals("WHERE (\"%root\".flightType) LIKE ('L%')\n", check);
+        assertEquals("WHERE (\"%root\".flightType) LIKE (?)\n", check);
     }
 
     @Test

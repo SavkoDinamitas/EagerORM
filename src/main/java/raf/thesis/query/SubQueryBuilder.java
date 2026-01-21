@@ -137,6 +137,8 @@ public class SubQueryBuilder extends QueryBuilder implements Expression {
         StringBuilder result = new StringBuilder();
         result.append("\n(");
         result.append(build(dialect));
+        //add query arguments also
+        args.addAll(queryArguments);
         //remove ; at the end of build
         result.deleteCharAt(result.length() - 1);
         result.append(")");
