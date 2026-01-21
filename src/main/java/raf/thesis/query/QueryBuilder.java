@@ -30,6 +30,8 @@ public class QueryBuilder {
 
     private boolean pdoQuery = false;
 
+    private List<Literal> queryArguments = new ArrayList<>();
+
     /**
      * Sets the root entity of the {@code QueryBuilder} to specify the type of object the query will return.
      *
@@ -212,6 +214,13 @@ public class QueryBuilder {
         return generateSelectClause(dialect) + "\n" + generateJoinClauses(dialect) + generateWhereClause(dialect) + generateGroupByClause(dialect) + generateHavingClause(dialect) + generateOrderByClause(dialect) + generateLimitClause(dialect) + ";";
     }
 
+    public PreparedStatementQuery buildPreparedStatement(Dialect dialect){
+        //reset queryArguments in case there are multiple calls of same QB
+        queryArguments = new ArrayList<>();
+        String query = build(dialect);
+        return new PreparedStatementQuery(query, queryArguments);
+    }
+
     /**
      * Creates the select AST's {@link JoinNode} nodes for the given relation path.
      *
@@ -355,21 +364,21 @@ public class QueryBuilder {
         return builder.toString();
     }
     public String generateSelectClause(Dialect dialect){
-        return dialect.generateSelectClause(rootSelectNode);
+        return dialect.generateSelectClause(rootSelectNode, queryArguments);
     }
     public String generateWhereClause(Dialect dialect){
-        return rootSelectNode.getWhereNode() != null ? dialect.generateWhereClause(rootSelectNode.getWhereNode()) + "\n" : "";
+        return rootSelectNode.getWhereNode() != null ? dialect.generateWhereClause(rootSelectNode.getWhereNode(), queryArguments) + "\n" : "";
     }
     public String generateGroupByClause(Dialect dialect){
-        return rootSelectNode.getGroupByNode() != null ? dialect.generateGroupByClause(rootSelectNode.getGroupByNode()) + "\n" : "";
+        return rootSelectNode.getGroupByNode() != null ? dialect.generateGroupByClause(rootSelectNode.getGroupByNode(), queryArguments) + "\n" : "";
     }
     public String generateHavingClause(Dialect dialect){
-        return rootSelectNode.getHavingNode() != null ? dialect.generateHavingClause(rootSelectNode.getHavingNode()) + "\n" : "";
+        return rootSelectNode.getHavingNode() != null ? dialect.generateHavingClause(rootSelectNode.getHavingNode(), queryArguments) + "\n" : "";
     }
     public String generateOrderByClause(Dialect dialect){
-        return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes()) + "\n" : "";
+        return rootSelectNode.getOrderByNodes() != null ? dialect.generateOrderByClause(rootSelectNode.getOrderByNodes(), queryArguments) + "\n" : "";
     }
     public String generateLimitClause(Dialect dialect){
-        return rootSelectNode.getLimitNode() != null ? dialect.generateLimitClause(rootSelectNode.getLimitNode()) : "";
+        return rootSelectNode.getLimitNode() != null ? dialect.generateLimitClause(rootSelectNode.getLimitNode(), queryArguments) + "\n" : "";
     }
 }

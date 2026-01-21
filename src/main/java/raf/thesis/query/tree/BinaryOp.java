@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import raf.thesis.query.dialect.Dialect;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Getter @Setter
 @NoArgsConstructor
@@ -14,7 +16,7 @@ public class BinaryOp implements Expression{
     private BinaryOpCode code;
 
     @Override
-    public String toSql(Dialect dialect) {
-        return dialect.generateBinaryOperationExp(this);
+    public String toSql(Dialect dialect, List<Literal> args) {
+        return dialect.generateBinaryOperationExp(this, args);
     }
 }

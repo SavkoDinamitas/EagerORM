@@ -75,14 +75,17 @@ public class Session {
     }
 
     public <T> List<T> executeSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build(dialect);
-        if (sql == null)
-            return null;
-        return executeSelect(sql, resultClass);
+        return runBody(conn -> {
+            PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
+            if (pq.getQuery() == null)
+                return null;
+            ResultSet rs = executePreparedQuery(pq, conn);
+            return rowMapper.mapWithRelations(rs, resultClass);
+        });
     }
 
     public <T> List<T> executeSelect(String query, Class<T> resultClass) throws SQLException {
-        return runBody((conn) -> {
+        return runBody(conn -> {
             List<T> result;
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(query)) {
@@ -93,10 +96,13 @@ public class Session {
     }
 
     public <T> List<T> executePDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build(dialect);
-        if (sql == null)
-            return null;
-        return executePDOSelect(sql, resultClass);
+        return runBody((conn -> {
+            PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
+            if (pq.getQuery() == null)
+                return null;
+            ResultSet rs = executePreparedQuery(pq, conn);
+            return rowMapper.mapList(rs, resultClass);
+        }));
     }
 
     public <T> List<T> executePDOSelect(String query, Class<T> resultClass) throws SQLException {
@@ -111,14 +117,17 @@ public class Session {
     }
 
     public <T> Optional<T> executeSingleRowPDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        String sql = queryBuilder.build(dialect);
-        if (sql == null)
-            return Optional.empty();
-        return executeSingleRowPDOSelect(sql, resultClass);
+        return runBody(conn ->{
+            PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
+            if (pq.getQuery() == null)
+                return Optional.empty();
+            ResultSet rs = executePreparedQuery(pq, conn);
+            return Optional.ofNullable(rowMapper.map(rs, resultClass));
+        });
     }
 
     public <T> Optional<T> executeSingleRowPDOSelect(String query, Class<T> resultClass) throws SQLException {
-        return runBody((conn) -> {
+        return runBody(conn -> {
             Optional<T> result;
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(query)) {
@@ -174,6 +183,14 @@ public class Session {
             bindLiteral(preparedStatement, i, mainInsert.getArguments().get(i - 1));
         }
         return preparedStatement.executeQuery();
+    }
+
+    private ResultSet executePreparedQuery(PreparedStatementQuery pq, Connection conn) throws SQLException {
+            PreparedStatement preparedStatement = conn.prepareStatement(pq.getQuery());
+            for (int i = 1; i <= pq.getArguments().size(); i++) {
+                bindLiteral(preparedStatement, i, pq.getArguments().get(i - 1));
+            }
+            return preparedStatement.executeQuery();
     }
 
     public void update(Object obj) throws SQLException {

@@ -3,6 +3,7 @@ package raf.thesis.query;
 import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.tree.Expression;
+import raf.thesis.query.tree.Literal;
 import raf.thesis.query.tree.OrderByNode;
 import raf.thesis.query.tree.SelectNode;
 
@@ -131,7 +132,7 @@ public class SubQueryBuilder extends QueryBuilder implements Expression {
      * Generated SQL for the subquery is .build() in brackets without ;
      */
     @Override
-    public String toSql(Dialect dialect) {
+    public String toSql(Dialect dialect, List<Literal> args) {
         rootSelectNode.setSelectFieldNodes(columns);
         StringBuilder result = new StringBuilder();
         result.append("\n(");

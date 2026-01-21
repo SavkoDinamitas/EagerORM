@@ -14,7 +14,7 @@ public class TupleNode implements Expression{
     List<Expression> operands;
 
     @Override
-    public String toSql(Dialect dialect) {
-        return dialect.generateTupleExp(this);
+    public String toSql(Dialect dialect, List<Literal> args) {
+        return dialect.generateTupleExp(this, args);
     }
 }

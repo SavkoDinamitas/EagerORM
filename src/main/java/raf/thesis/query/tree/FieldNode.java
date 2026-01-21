@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import raf.thesis.query.dialect.Dialect;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Getter
 public class FieldNode implements Expression{
@@ -11,7 +13,7 @@ public class FieldNode implements Expression{
     private String tableAlias;
 
     @Override
-    public String toSql(Dialect dialect) {
+    public String toSql(Dialect dialect, List<Literal> args) {
         return dialect.generateFieldExp(this);
     }
 }

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import raf.thesis.query.dialect.Dialect;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Setter
 @Getter
@@ -14,7 +16,7 @@ public class FunctionNode implements Expression{
     private boolean distinct;
 
     @Override
-    public String toSql(Dialect dialect) {
-        return dialect.generateFunctionExp(this);
+    public String toSql(Dialect dialect, List<Literal> args) {
+        return dialect.generateFunctionExp(this, args);
     }
 }
