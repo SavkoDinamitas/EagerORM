@@ -218,7 +218,7 @@ public class QueryBuilder {
         //reset queryArguments in case there are multiple calls of same QB
         queryArguments = new ArrayList<>();
         String query = build(dialect);
-        return new PreparedStatementQuery(query, queryArguments);
+        return new PreparedStatementQuery(query, Collections.unmodifiableList(queryArguments));
     }
 
     /**
