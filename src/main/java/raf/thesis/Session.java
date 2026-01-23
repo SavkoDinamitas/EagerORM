@@ -23,6 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Central entry point for executing queries and persistence operations.
+ * <p>
+ * A {@code Session} manages SQL generation, execution, result mapping,
+ * dialect resolution, and transaction scoping over connections supplied
+ * by a {@link ConnectionSupplier}.
+ */
 @SuppressWarnings("ClassEscapesDefinedScope")
 public class Session {
     private final ConnectionSupplier connectionSupplier;
@@ -33,6 +40,14 @@ public class Session {
 
     private final ThreadLocal<Connection> activeConnection = new ThreadLocal<>();
 
+    /**
+     * Creates a session that auto-detects the SQL dialect from the database
+     * connection metadata and scans the given packages for entity metadata.
+     *
+     * @param connectionSupplier supplier of database connections
+     * @param scanPackages packages to scan for entity metadata, if not given
+     *                     scans whole classpath
+     */
     public Session(ConnectionSupplier connectionSupplier, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
         metadataScanner.discoverMetadata(scanPackages);
@@ -41,6 +56,15 @@ public class Session {
         DBUpdateSolver = new DBUpdateSolver(dialect);
     }
 
+    /**
+     * Creates a session with an explicit SQL dialect and scans the given
+     * packages for entity metadata.
+     *
+     * @param connectionSupplier supplier of database connections
+     * @param dialect SQL dialect to use
+     * @param scanPackages packages to scan for entity metadata, if not given
+     *                     scans whole classpath
+     */
     public Session(ConnectionSupplier connectionSupplier, Dialect dialect, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
         metadataScanner.discoverMetadata(scanPackages);
@@ -49,7 +73,7 @@ public class Session {
         DBUpdateSolver = new DBUpdateSolver(dialect);
     }
 
-    //detect database from connection
+    /** Detect database from connection */
     private Dialect getDialect(){
         try(Connection conn = connectionSupplier.getConnection()){
             String driverName = conn.getMetaData().getDriverName();
@@ -66,7 +90,10 @@ public class Session {
         }
     }
 
+    /** Method that enables running of multiple Session methods on the same connection, used for transactions.
+     *  Each method that works with database connection is wrapped inside this method*/
     private <T> T runBody(SQLValuedTransactionBody<T> body) throws SQLException {
+        //if there is an active transaction, execute method on its connection
         if (activeConnection.get() != null) return body.execute(activeConnection.get());
         else
             try (var conn = connectionSupplier.getConnection()) {
@@ -74,6 +101,14 @@ public class Session {
             }
     }
 
+    /**
+     * Executes a select query built by a {@link QueryBuilder} and maps
+     * the result set to entity objects.
+     *
+     * @param queryBuilder query builder
+     * @param resultClass resulting mapped entity .class type
+     * @return mapped list of entity objects
+     */
     public <T> List<T> executeSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
         return runBody(conn -> {
             PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
@@ -84,6 +119,15 @@ public class Session {
         });
     }
 
+    /**
+     * Executes a raw SQL select query and maps the result set to entity objects.
+     * <p>
+     * All field aliases must be in a dot-separated relation path format
+     *
+     * @param query SQL query string in required format
+     * @param resultClass resulting mapped entity .class type
+     * @return mapped list of entity objects
+     */
     public <T> List<T> executeSelect(String query, Class<T> resultClass) throws SQLException {
         return runBody(conn -> {
             List<T> result;
@@ -95,6 +139,16 @@ public class Session {
         });
     }
 
+    /**
+     * Executes a {@link QueryBuilder} select query and maps only the direct fields of the result
+     * objects (no relations).
+     * <p>
+     * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
+     *
+     * @param queryBuilder query builder
+     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
+     */
     public <T> List<T> executePDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
         return runBody((conn -> {
             PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
@@ -105,6 +159,18 @@ public class Session {
         }));
     }
 
+    /**
+     * Executes a raw SQL select query and maps only the direct fields of the result
+     * objects (no relations).
+     * <p>
+     * All field aliases must be in a dot-separated relation path format.
+     * <p>
+     * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
+     *
+     * @param query SQL query string in required format
+     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
+     */
     public <T> List<T> executePDOSelect(String query, Class<T> resultClass) throws SQLException {
         return runBody((conn -> {
             List<T> result;
@@ -116,6 +182,16 @@ public class Session {
         }));
     }
 
+    /**
+     * Executes a {@link QueryBuilder} select query with a single row result
+     * and maps only the direct fields of the result objects (no relations).
+     * <p>
+     * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
+     *
+     * @param queryBuilder query builder
+     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
+     */
     public <T> Optional<T> executeSingleRowPDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
         return runBody(conn ->{
             PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
@@ -126,6 +202,18 @@ public class Session {
         });
     }
 
+    /**
+     * Executes a raw SQL select query with a single row result and maps
+     * only the direct fields of the result objects (no relations).
+     * <p>
+     * All field aliases must be in a dot-separated relation path format.
+     * <p>
+     * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
+     *
+     * @param query SQL query string in required format
+     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
+     */
     public <T> Optional<T> executeSingleRowPDOSelect(String query, Class<T> resultClass) throws SQLException {
         return runBody(conn -> {
             Optional<T> result;
@@ -137,6 +225,18 @@ public class Session {
         });
     }
 
+    /**
+     * Persists a new entity instance and returns it populated with
+     * generated key values.
+     * <p>
+     * New entity instance is persisted with all relations if related
+     * entity objects are already in the DB, otherwise it will fail the
+     * foreign key constraint.
+     *
+     * @param obj entity to insert
+     * @return inserted entity with generated primary keys
+     */
+    //TODO: add all relation insertion support, even when foreign key is in other object
     public <T> T insert(T obj) throws SQLException {
         return runBody((conn -> {
             PreparedStatementQuery mainInsert = DBUpdateSolver.generateInsert(obj);
@@ -168,6 +268,7 @@ public class Session {
         }));
     }
 
+    /** method for filling the generated keys via jdbc getGeneratedKeys()*/
     private ResultSet insertAndGetKeys(Connection conn, PreparedStatementQuery mainInsert, Object obj) throws SQLException{
         PreparedStatement preparedStatement = conn.prepareStatement(mainInsert.getQuery(), extractKeys(obj));
         for (int i = 1; i <= mainInsert.getArguments().size(); i++) {
@@ -177,6 +278,7 @@ public class Session {
         return preparedStatement.getGeneratedKeys();
     }
 
+    /** method for filling the generated keys via the RETURNING keyword in SQL query*/
     private ResultSet insertReturning(Connection conn, PreparedStatementQuery mainInsert) throws SQLException{
         PreparedStatement preparedStatement = conn.prepareStatement(mainInsert.getQuery());
         for (int i = 1; i <= mainInsert.getArguments().size(); i++) {
@@ -185,6 +287,7 @@ public class Session {
         return preparedStatement.executeQuery();
     }
 
+    /** Helper function for executing the {@link PreparedStatementQuery} queries on given connection*/
     private ResultSet executePreparedQuery(PreparedStatementQuery pq, Connection conn) throws SQLException {
             PreparedStatement preparedStatement = conn.prepareStatement(pq.getQuery());
             for (int i = 1; i <= pq.getArguments().size(); i++) {
@@ -193,38 +296,83 @@ public class Session {
             return preparedStatement.executeQuery();
     }
 
+    /**
+     * Updates an existing entity instance.
+     * <p>
+     * Updates only direct fields of the entity (no relations)
+     * @param obj entity to update
+     */
     public void update(Object obj) throws SQLException {
         PreparedStatementQuery update = DBUpdateSolver.updateObject(obj, false);
         executeUpdateStatement(update);
     }
 
+    /**
+     * Updates an existing entity instance with ignoring null-valued fields.
+     * <p>
+     * Updates only direct fields of the entity (no relations)
+     * @param obj entity to update
+     */
     public void update(Object obj, IgnoreNull ignoreNull) throws SQLException {
         PreparedStatementQuery update = DBUpdateSolver.updateObject(obj, true);
         executeUpdateStatement(update);
     }
 
+    /**
+     * Deletes an entity instance from the DB.
+     *
+     * @param obj entity to delete
+     */
     public void delete(Object obj) throws SQLException {
         PreparedStatementQuery delete = DBUpdateSolver.deleteObject(obj);
         executeUpdateStatement(delete);
     }
 
+    /**
+     * Creates a relationship between two entity instances .
+     * Fills the relation with given relation name.
+     * Works for all relation types.
+     *
+     * @param obj1 first entity
+     * @param obj2 second entity
+     * @param relationName relation name in the first entity
+     */
     public void connectRows(Object obj1, Object obj2, String relationName) throws SQLException {
         PreparedStatementQuery connect = DBUpdateSolver.connect(obj1, obj2, relationName);
         executeUpdateStatement(connect);
     }
 
+    /**
+     * Removes a relationship represented by a foreign key held by {@code obj1}.
+     * <p>
+     * Relationship is removed by placing NULL in foreign key column.
+     *
+     * @param obj1 owning entity
+     * @param relationName relation name
+     */
     //only for MANY-TO-ONE and ONE-TO-ONE with containsFK = true relations
     public void disconnectRow(Object obj1, String relationName) throws SQLException {
         PreparedStatementQuery disconnect = DBUpdateSolver.disconnect(obj1, null, relationName);
         executeUpdateStatement(disconnect);
     }
 
+    /**
+     * Removes a relationship between two entity instances.
+     * <p>
+     * Relationship is removed by placing {@code NULL} in the foreign key column,
+     * or by removing a row in joined table for {@link raf.thesis.metadata.annotations.ManyToMany} relations
+     *
+     * @param obj1 first entity
+     * @param obj2 second entity
+     * @param relationName relation name
+     */
     //only for MANY-TO-MANY, ONE-TO-MANY and ONE-TO-ONE with containsFK = false relations
     public void disconnectRows(Object obj1, Object obj2, String relationName) throws SQLException {
         PreparedStatementQuery disconnect = DBUpdateSolver.disconnect(obj1, obj2, relationName);
         executeUpdateStatement(disconnect);
     }
 
+    /** Helper function for executing update prepared statements */
     private void executeUpdateStatement(PreparedStatementQuery update) throws SQLException {
         runBody(conn -> {
             PreparedStatement preparedStatement = conn.prepareStatement(update.getQuery());
@@ -236,6 +384,7 @@ public class Session {
         });
     }
 
+    /** Helper function to extract primary key names from entity */
     private String[] extractKeys(Object obj) {
         EntityMetadata metadata = MetadataStorage.get(obj.getClass());
         if (metadata == null)
@@ -251,6 +400,7 @@ public class Session {
         return keys;
     }
 
+    /** Helper function to fill prepared statement jokers with right arguments */
     private void bindLiteral(PreparedStatement ps, int idx, Literal lit) throws SQLException {
         switch (lit) {
             case Literal.DoubleCnst d -> ps.setDouble(idx, d.x());
@@ -266,6 +416,10 @@ public class Session {
         }
     }
 
+    /**
+     * Marker object indicating that null-valued fields should be ignored
+     * during update generation.
+     */
     private static class IgnoreNull {
         public String toString() {
             return "IGNORE NULL";
@@ -276,6 +430,16 @@ public class Session {
 
 
     //transaction management
+
+    /**
+     * Executes the given body within a transaction boundary.
+     * <p>
+     * The transaction is committed on successful completion and rolled
+     * back on failure.
+     *
+     * @param body transactional body
+     * @return body result
+     */
     public <T> T transaction(SQLValuedTransactionBody<T> body) throws SQLException {
         return withConnection(connection -> {
             connection.setAutoCommit(false);
@@ -291,6 +455,14 @@ public class Session {
         });
     }
 
+    /**
+     * Executes the given body within a transaction boundary.
+     * <p>
+     * The transaction is committed on successful completion and rolled
+     * back on failure.
+     *
+     * @param body transactional body
+     */
     public void transaction(SQLTransactionBody body) throws SQLException {
         transaction(conn -> {
             body.execute(conn);
@@ -298,6 +470,13 @@ public class Session {
         });
     }
 
+    /**
+     * Executes the given body using only the provided connection.
+     *
+     * @param connection body execution connection
+     * @param body body to execute
+     * @return body result
+     */
     public <T> T withConnection(Connection connection, SQLValuedTransactionBody<T> body) throws SQLException {
         Objects.requireNonNull(connection);
         if (activeConnection.get() != null)
@@ -310,6 +489,12 @@ public class Session {
         }
     }
 
+    /**
+     * Executes the given body using only the provided connection.
+     *
+     * @param connection body execution connection
+     * @param body body to execute
+     */
     public void withConnection(Connection connection, SQLTransactionBody body) throws SQLException {
         withConnection(connection, conn -> {
             body.execute(conn);
@@ -317,12 +502,23 @@ public class Session {
         });
     }
 
+    /**
+     * Executes the given body using only one {@link ConnectionSupplier} connection.
+     *
+     * @param body body to execute
+     * @return body result
+     */
     public <T> T withConnection(SQLValuedTransactionBody<T> body) throws SQLException {
         try (var connection = connectionSupplier.getConnection()) {
             return withConnection(connection, body);
         }
     }
 
+    /**
+     * Executes the given body using only one {@link ConnectionSupplier} connection.
+     *
+     * @param body body to execute
+     */
     public void withConnection(SQLTransactionBody body) throws SQLException {
         withConnection(conn -> {
             body.execute(conn);
