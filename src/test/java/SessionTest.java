@@ -145,6 +145,34 @@ public class SessionTest {
         Employee expected = new Employee(100, "Salko", "King", LocalDate.of(2003, 6, 17));
         assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(expected);
     }
+    //test upsert
+    @Test
+    void testUpsert(Session session) throws SQLException {
+        Employee myEmployee = new Employee(105, "Salko", "Dinamitas", LocalDate.of(2020, 9, 14));
+        Department marketing = new  Department(20, "Marketing");
+        myEmployee.setDepartment(marketing);
+        session.upsert(myEmployee);
+        QueryBuilder qb = QueryBuilder.select(Employee.class).join("department").where(field("employee_id").eq(lit(105)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(myEmployee);
+        Department purchasing = new Department(30, "Purchasing");
+        myEmployee.setDepartment(purchasing);
+        session.upsert(myEmployee);
+        employees = session.executeSelect(qb, Employee.class);
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(myEmployee);
+    }
+
+    @Test
+    void testUpsertWithOneToManyRelation(Session session) throws SQLException {
+        Department myDepartment = new Department(50, "MyDepartment");
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        myDepartment.setEmployees(List.of(Steven));
+        session.upsert(myDepartment);
+        QueryBuilder qb = QueryBuilder.select(Employee.class).join("department").join("department.employees").where(field("employee_id").eq(lit(100)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        Steven.setDepartment(myDepartment);
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(Steven);
+    }
 
     //test delete objects and relations
     @Test

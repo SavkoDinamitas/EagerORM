@@ -9,10 +9,7 @@ import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.query.Join;
 import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.QueryBuilder;
-import raf.thesis.query.dialect.ANSISQLDialect;
-import raf.thesis.query.dialect.Dialect;
-import raf.thesis.query.dialect.MSSQLServerDialect;
-import raf.thesis.query.dialect.MariaDBDialect;
+import raf.thesis.query.dialect.*;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.tree.Literal;
 import util.H2HRProvider;
@@ -44,6 +41,8 @@ public class LayerIntegrationTest {
                 return new MariaDBDialect();
             if(driverName.toLowerCase().contains("microsoft"))
                 return new MSSQLServerDialect();
+            if(driverName.toLowerCase().contains("postgresql"))
+                return new PostgreSQLDialect();
             else
                 return new ANSISQLDialect();
         } catch (SQLException e) {
