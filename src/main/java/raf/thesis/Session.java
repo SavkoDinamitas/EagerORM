@@ -252,8 +252,11 @@ public class Session {
             rs.next();
             T keysObject = rowMapper.map(rs, obj);
 
+            //solve relationships with foreign keys that are not in the object
+            List<PreparedStatementQuery> queries = DBUpdateSolver.generateRelationshipUpdateQueries(keysObject);
+
             //solve many-to-many relationships
-            List<PreparedStatementQuery> queries = DBUpdateSolver.generateManyToManyInserts(keysObject);
+            queries.addAll(DBUpdateSolver.generateManyToManyInserts(keysObject));
 
             //go in reverse as last element in list is the main insert, others are many to many inserts
             for (int k = queries.size() - 1; k >= 0; k--) {

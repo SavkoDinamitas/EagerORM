@@ -73,6 +73,36 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(query, columnValues);
     }
 
+    public List<PreparedStatementQuery> generateRelationshipUpdateQueries(Object obj) {
+        List<PreparedStatementQuery> queries = new ArrayList<>();
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
+
+        //for each ONE_TO_MANY relation and ONE_TO_ONE with containsFK == false, make the update query
+        for(var relation : meta.getRelations()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
+            //if relationship is empty, continue
+            if (relatedObject == null)
+                continue;
+            //ONE_TO_MANY case, connect all elements in the list with obj
+            if(relation.getRelationType() == RelationType.ONE_TO_MANY) {
+                if(relatedObject instanceof List<?> relations) {
+                    for (Object element : relations) {
+                        queries.add(connect(obj, element, relation.getRelationName()));
+                    }
+                }
+                else
+                    throw new IllegalStateException("ONE_TO_MANY field must be a list");
+            }
+            //ONE_TO_ONE case, connect one element with obj
+            if(relation.getRelationType() == RelationType.ONE_TO_ONE && !relation.getMySideKey()){
+                queries.add(connect(obj, relatedObject, relation.getRelationName()));
+            }
+        }
+        return queries;
+    }
+
     /**
      * Generates INSERT queries for all MANY_TO_MANY relations in the given object.
      * Object must have the primary key inside.
