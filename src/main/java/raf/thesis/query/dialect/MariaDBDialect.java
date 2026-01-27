@@ -53,4 +53,26 @@ public class MariaDBDialect extends ANSISQLDialect implements Dialect.UsesInsert
     public String generateInsertQuery(List<String> columns, String tableName, List<String> returningKeys) {
         return insertHelper(columns, tableName) + generateReturningClause(returningKeys);
     }
+
+    @Override
+    public String generateUpsertQuery(List<String> columnNames, String tableName, List<String> keyColumnNames){
+        return """
+                INSERT INTO %s (%s)
+                VALUES (%s)
+                ON DUPLICATE KEY UPDATE
+                %s;""".formatted(tableName, generateInsertColumnParenthesis(columnNames), generateQuestionMarks(columnNames.size()), generateUpsertMatchedClause(columnNames));
+    }
+
+    @Override
+    protected String generateUpsertMatchedClause(List<String> columnNames){
+        StringBuilder result = new StringBuilder();
+        for(var column : columnNames){
+            result.append(column);
+            result.append(" = VALUES (");
+            result.append(column).append("),\n");
+        }
+        result.deleteCharAt(result.length()-1);
+        result.deleteCharAt(result.length()-1);
+        return result.toString();
+    }
 }

@@ -8,10 +8,7 @@ import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.DBUpdateSolver;
 import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.QueryBuilder;
-import raf.thesis.query.dialect.ANSISQLDialect;
-import raf.thesis.query.dialect.Dialect;
-import raf.thesis.query.dialect.MSSQLServerDialect;
-import raf.thesis.query.dialect.MariaDBDialect;
+import raf.thesis.query.dialect.*;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.exceptions.EntityObjectRequiredException;
 import raf.thesis.query.transaction.SQLTransactionBody;
@@ -45,8 +42,8 @@ public class Session {
      * connection metadata and scans the given packages for entity metadata.
      *
      * @param connectionSupplier supplier of database connections
-     * @param scanPackages packages to scan for entity metadata, if not given
-     *                     scans whole classpath
+     * @param scanPackages       packages to scan for entity metadata, if not given
+     *                           scans whole classpath
      */
     public Session(ConnectionSupplier connectionSupplier, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
@@ -61,9 +58,9 @@ public class Session {
      * packages for entity metadata.
      *
      * @param connectionSupplier supplier of database connections
-     * @param dialect SQL dialect to use
-     * @param scanPackages packages to scan for entity metadata, if not given
-     *                     scans whole classpath
+     * @param dialect            SQL dialect to use
+     * @param scanPackages       packages to scan for entity metadata, if not given
+     *                           scans whole classpath
      */
     public Session(ConnectionSupplier connectionSupplier, Dialect dialect, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
@@ -73,16 +70,20 @@ public class Session {
         DBUpdateSolver = new DBUpdateSolver(dialect);
     }
 
-    /** Detect database from connection */
-    private Dialect getDialect(){
-        try(Connection conn = connectionSupplier.getConnection()){
+    /**
+     * Detect database from connection
+     */
+    private Dialect getDialect() {
+        try (Connection conn = connectionSupplier.getConnection()) {
             String driverName = conn.getMetaData().getDriverName();
-            if(driverName.toLowerCase().contains("mariadb"))
+            if (driverName.toLowerCase().contains("mariadb"))
                 return new MariaDBDialect();
-            if(driverName.toLowerCase().contains("mysql"))
+            if (driverName.toLowerCase().contains("mysql"))
                 return new MariaDBDialect();
-            if(driverName.toLowerCase().contains("microsoft"))
+            if (driverName.toLowerCase().contains("microsoft"))
                 return new MSSQLServerDialect();
+            if (driverName.toLowerCase().contains("postgresql"))
+                return new PostgreSQLDialect();
             else
                 return new ANSISQLDialect();
         } catch (SQLException e) {
@@ -90,8 +91,10 @@ public class Session {
         }
     }
 
-    /** Method that enables running of multiple Session methods on the same connection, used for transactions.
-     *  Each method that works with database connection is wrapped inside this method*/
+    /**
+     * Method that enables running of multiple Session methods on the same connection, used for transactions.
+     * Each method that works with database connection is wrapped inside this method
+     */
     private <T> T runBody(SQLValuedTransactionBody<T> body) throws SQLException {
         //if there is an active transaction, execute method on its connection
         if (activeConnection.get() != null) return body.execute(activeConnection.get());
@@ -106,7 +109,7 @@ public class Session {
      * the result set to entity objects.
      *
      * @param queryBuilder query builder
-     * @param resultClass resulting mapped entity .class type
+     * @param resultClass  resulting mapped entity .class type
      * @return mapped list of entity objects
      */
     public <T> List<T> executeSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
@@ -124,7 +127,7 @@ public class Session {
      * <p>
      * All field aliases must be in a dot-separated relation path format
      *
-     * @param query SQL query string in required format
+     * @param query       SQL query string in required format
      * @param resultClass resulting mapped entity .class type
      * @return mapped list of entity objects
      */
@@ -146,7 +149,7 @@ public class Session {
      * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
      *
      * @param queryBuilder query builder
-     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @param resultClass  resulting {@link raf.thesis.metadata.annotations.PDO} marked class
      * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
      */
     public <T> List<T> executePDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
@@ -167,7 +170,7 @@ public class Session {
      * <p>
      * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
      *
-     * @param query SQL query string in required format
+     * @param query       SQL query string in required format
      * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
      * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
      */
@@ -189,11 +192,11 @@ public class Session {
      * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
      *
      * @param queryBuilder query builder
-     * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
+     * @param resultClass  resulting {@link raf.thesis.metadata.annotations.PDO} marked class
      * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
      */
     public <T> Optional<T> executeSingleRowPDOSelect(QueryBuilder queryBuilder, Class<T> resultClass) throws SQLException {
-        return runBody(conn ->{
+        return runBody(conn -> {
             PreparedStatementQuery pq = queryBuilder.buildPreparedStatement(dialect);
             if (pq.getQuery() == null)
                 return Optional.empty();
@@ -210,7 +213,7 @@ public class Session {
      * <p>
      * Used for mapping {@link raf.thesis.metadata.annotations.PDO} objects
      *
-     * @param query SQL query string in required format
+     * @param query       SQL query string in required format
      * @param resultClass resulting {@link raf.thesis.metadata.annotations.PDO} marked class
      * @return mapped list of {@link raf.thesis.metadata.annotations.PDO} objects
      */
@@ -243,9 +246,9 @@ public class Session {
             ResultSet rs;
 
             //databases that doesn't support generatedKeys() with given column labels
-            if(dialect instanceof Dialect.UsesInsertReturning)
+            if (dialect instanceof Dialect.UsesInsertReturning)
                 rs = insertReturning(conn, mainInsert);
-            //normal ones
+                //normal ones
             else
                 rs = insertAndGetKeys(conn, mainInsert, obj);
 
@@ -271,8 +274,10 @@ public class Session {
         }));
     }
 
-    /** method for filling the generated keys via jdbc getGeneratedKeys()*/
-    private ResultSet insertAndGetKeys(Connection conn, PreparedStatementQuery mainInsert, Object obj) throws SQLException{
+    /**
+     * method for filling the generated keys via jdbc getGeneratedKeys()
+     */
+    private ResultSet insertAndGetKeys(Connection conn, PreparedStatementQuery mainInsert, Object obj) throws SQLException {
         PreparedStatement preparedStatement = conn.prepareStatement(mainInsert.getQuery(), extractKeys(obj));
         for (int i = 1; i <= mainInsert.getArguments().size(); i++) {
             bindLiteral(preparedStatement, i, mainInsert.getArguments().get(i - 1));
@@ -281,8 +286,10 @@ public class Session {
         return preparedStatement.getGeneratedKeys();
     }
 
-    /** method for filling the generated keys via the RETURNING keyword in SQL query*/
-    private ResultSet insertReturning(Connection conn, PreparedStatementQuery mainInsert) throws SQLException{
+    /**
+     * method for filling the generated keys via the RETURNING keyword in SQL query
+     */
+    private ResultSet insertReturning(Connection conn, PreparedStatementQuery mainInsert) throws SQLException {
         PreparedStatement preparedStatement = conn.prepareStatement(mainInsert.getQuery());
         for (int i = 1; i <= mainInsert.getArguments().size(); i++) {
             bindLiteral(preparedStatement, i, mainInsert.getArguments().get(i - 1));
@@ -290,19 +297,22 @@ public class Session {
         return preparedStatement.executeQuery();
     }
 
-    /** Helper function for executing the {@link PreparedStatementQuery} queries on given connection*/
+    /**
+     * Helper function for executing the {@link PreparedStatementQuery} queries on given connection
+     */
     private ResultSet executePreparedQuery(PreparedStatementQuery pq, Connection conn) throws SQLException {
-            PreparedStatement preparedStatement = conn.prepareStatement(pq.getQuery());
-            for (int i = 1; i <= pq.getArguments().size(); i++) {
-                bindLiteral(preparedStatement, i, pq.getArguments().get(i - 1));
-            }
-            return preparedStatement.executeQuery();
+        PreparedStatement preparedStatement = conn.prepareStatement(pq.getQuery());
+        for (int i = 1; i <= pq.getArguments().size(); i++) {
+            bindLiteral(preparedStatement, i, pq.getArguments().get(i - 1));
+        }
+        return preparedStatement.executeQuery();
     }
 
     /**
      * Updates an existing entity instance.
      * <p>
      * Updates only direct fields of the entity (no relations)
+     *
      * @param obj entity to update
      */
     public void update(Object obj) throws SQLException {
@@ -314,11 +324,37 @@ public class Session {
      * Updates an existing entity instance with ignoring null-valued fields.
      * <p>
      * Updates only direct fields of the entity (no relations)
+     *
      * @param obj entity to update
      */
     public void update(Object obj, IgnoreNull ignoreNull) throws SQLException {
         PreparedStatementQuery update = DBUpdateSolver.updateObject(obj, true);
         executeUpdateStatement(update);
+    }
+
+    /**
+     * Persists a new entity instance if there is no object with the same
+     * primary key in DB table.
+     * If there is one, updates its columns and relations to new values.
+     * <p>
+     * Entity instance is persisted with all relations if related
+     * entity objects are already in the DB, otherwise it will fail the
+     * foreign key constraint.
+     *
+     * @param obj entity to insert or update if existent
+     */
+    public void upsert(Object obj) throws SQLException {
+        runBody(conn -> {
+            List<PreparedStatementQuery> upsert = DBUpdateSolver.upsertObject(obj);
+            for (var update : upsert) {
+                PreparedStatement preparedStatement = conn.prepareStatement(update.getQuery());
+                for (int i = 1; i <= update.getArguments().size(); i++) {
+                    bindLiteral(preparedStatement, i, update.getArguments().get(i - 1));
+                }
+                preparedStatement.executeUpdate();
+            }
+            return null;
+        });
     }
 
     /**
@@ -336,8 +372,8 @@ public class Session {
      * Fills the relation with given relation name.
      * Works for all relation types.
      *
-     * @param obj1 first entity
-     * @param obj2 second entity
+     * @param obj1         first entity
+     * @param obj2         second entity
      * @param relationName relation name in the first entity
      */
     public void connectRows(Object obj1, Object obj2, String relationName) throws SQLException {
@@ -350,7 +386,7 @@ public class Session {
      * <p>
      * Relationship is removed by placing NULL in foreign key column.
      *
-     * @param obj1 owning entity
+     * @param obj1         owning entity
      * @param relationName relation name
      */
     //only for MANY-TO-ONE and ONE-TO-ONE with containsFK = true relations
@@ -365,8 +401,8 @@ public class Session {
      * Relationship is removed by placing {@code NULL} in the foreign key column,
      * or by removing a row in joined table for {@link raf.thesis.metadata.annotations.ManyToMany} relations
      *
-     * @param obj1 first entity
-     * @param obj2 second entity
+     * @param obj1         first entity
+     * @param obj2         second entity
      * @param relationName relation name
      */
     //only for MANY-TO-MANY, ONE-TO-MANY and ONE-TO-ONE with containsFK = false relations
@@ -375,7 +411,9 @@ public class Session {
         executeUpdateStatement(disconnect);
     }
 
-    /** Helper function for executing update prepared statements */
+    /**
+     * Helper function for executing update prepared statements
+     */
     private void executeUpdateStatement(PreparedStatementQuery update) throws SQLException {
         runBody(conn -> {
             PreparedStatement preparedStatement = conn.prepareStatement(update.getQuery());
@@ -387,7 +425,9 @@ public class Session {
         });
     }
 
-    /** Helper function to extract primary key names from entity */
+    /**
+     * Helper function to extract primary key names from entity
+     */
     private String[] extractKeys(Object obj) {
         EntityMetadata metadata = MetadataStorage.get(obj.getClass());
         if (metadata == null)
@@ -403,7 +443,9 @@ public class Session {
         return keys;
     }
 
-    /** Helper function to fill prepared statement jokers with right arguments */
+    /**
+     * Helper function to fill prepared statement jokers with right arguments
+     */
     private void bindLiteral(PreparedStatement ps, int idx, Literal lit) throws SQLException {
         switch (lit) {
             case Literal.DoubleCnst d -> ps.setDouble(idx, d.x());
@@ -477,7 +519,7 @@ public class Session {
      * Executes the given body using only the provided connection.
      *
      * @param connection body execution connection
-     * @param body body to execute
+     * @param body       body to execute
      * @return body result
      */
     public <T> T withConnection(Connection connection, SQLValuedTransactionBody<T> body) throws SQLException {
@@ -496,7 +538,7 @@ public class Session {
      * Executes the given body using only the provided connection.
      *
      * @param connection body execution connection
-     * @param body body to execute
+     * @param body       body to execute
      */
     public void withConnection(Connection connection, SQLTransactionBody body) throws SQLException {
         withConnection(connection, conn -> {

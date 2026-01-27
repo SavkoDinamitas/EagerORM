@@ -215,6 +215,47 @@ public class ANSISQLDialect implements Dialect {
     }
 
     @Override
+    public String generateUpsertQuery(List<String> columnNames, String tableName, List<String> keyColumnNames) {
+        return """
+                MERGE INTO %s t
+                USING (VALUES(%s)) n(%s)
+                ON(%s)
+                WHEN MATCHED THEN
+                    UPDATE SET
+                     %s
+                WHEN NOT MATCHED THEN
+                    INSERT(%s)
+                    VALUES(%s);
+                """.formatted(tableName, generateQuestionMarks(columnNames.size()), generateInsertColumnParenthesis(columnNames), generateUpsertOnClause(keyColumnNames),
+                generateUpsertMatchedClause(columnNames), generateInsertColumnParenthesis(columnNames), generateUpsertValuesClause(columnNames));
+    }
+
+    protected String generateUpsertOnClause(List<String> keyColumnNames){
+        return "%s = %s".formatted(generateUpsertTuple(keyColumnNames, "t"), generateUpsertTuple(keyColumnNames, "n"));
+    }
+
+    protected String generateUpsertTuple(List<String> keyColumnNames, String table){
+        return keyColumnNames.stream().map("."::concat).map(table::concat).collect(Collectors.joining(", ", "(", ")"));
+    }
+
+    protected String generateUpsertMatchedClause(List<String> columnNames){
+        StringBuilder result = new StringBuilder();
+        for (var column : columnNames){
+            result.append(column);
+            result.append(" = n.");
+            result.append(column);
+            result.append(",\n");
+        }
+        result.deleteCharAt(result.length()-1);
+        result.deleteCharAt(result.length()-1);
+        return result.toString();
+    }
+
+    protected String generateUpsertValuesClause(List<String> columnNames){
+        return columnNames.stream().map("n."::concat).collect(Collectors.joining(", "));
+    }
+
+    @Override
     public void registerLiteral(Literal literal, List<Literal> args) {
         args.add(literal);
     }

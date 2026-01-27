@@ -39,6 +39,8 @@ public interface Dialect {
 
     String generateDeleteQuery(List<String> keyColumnNames, String tableName);
 
+    String generateUpsertQuery(List<String> columnNames, String tableName, List<String> keyColumnNames);
+
     void registerLiteral(Literal literal, List<Literal> args);
 
     public interface UsesInsertReturning extends Dialect{

@@ -30,6 +30,7 @@ public class DBUpdateSolver {
      * that have the foreign key in the table of the given object.
      * As there is generated primary key support,
      * other queries for relation solving must be made after this first insert.
+     * If key is marked as generated, it will always be skipped.
      * */
     public PreparedStatementQuery generateInsert(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
@@ -173,7 +174,46 @@ public class DBUpdateSolver {
     }
 
     /**
-     * Generated DELETE query for the given object using its PK
+     * Generates MERGE query for the given object.
+     * */
+    public List<PreparedStatementQuery> upsertObject(Object object){
+        EntityMetadata meta = MetadataStorage.get(object.getClass());
+        if(meta == null)
+            throw new EntityObjectRequiredException("Object: " + object + " is not an entity!");
+        List<String> keyColumnNames = extractKeys(meta);
+        List<String> columnNames = new ArrayList<>();
+        List<Literal> columnValues = new ArrayList<>();
+
+        //add all columns in object
+        for (var col : meta.getColumns().values()) {
+            columnNames.add(col.getColumnName());
+            columnValues.add(makeLiteral(col.getField(), object));
+        }
+
+        //solve relations
+        for (var relation : meta.getRelations()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), object);
+            if (relatedObject == null)
+                continue;
+
+            //if foreign key is in this object, add columns to insert query
+            if (relation.getRelationType() == RelationType.MANY_TO_ONE || (relation.getRelationType() == RelationType.ONE_TO_ONE && relation.getMySideKey())) {
+                columnNames.addAll(relation.getForeignKeyNames());
+                EntityMetadata relationEntity = MetadataStorage.get(relatedObject.getClass());
+                getKeyValues(relationEntity, relatedObject, columnValues);
+            }
+            //else, make the connection prepared statements at the end
+        }
+        String query = dialect.generateUpsertQuery(columnNames, meta.getTableName(), keyColumnNames);
+        List<PreparedStatementQuery> queries = new ArrayList<>();
+        queries.add(new PreparedStatementQuery(query, columnValues));
+        queries.addAll(generateRelationshipUpdateQueries(object));
+        queries.addAll(generateManyToManyInserts(object));
+        return queries;
+    }
+
+    /**
+     * Generates DELETE query for the given object using its PK.
      */
     public PreparedStatementQuery deleteObject(Object obj) {
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
