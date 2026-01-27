@@ -25,6 +25,12 @@ import java.util.*;
 public class DBUpdateSolver {
     public Dialect dialect;
 
+    /**
+     * Generates INSERT query for given object including the relations
+     * that have the foreign key in the table of the given object.
+     * As there is generated primary key support,
+     * other queries for relation solving must be made after this first insert.
+     * */
     public PreparedStatementQuery generateInsert(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
 
@@ -55,16 +61,22 @@ public class DBUpdateSolver {
             if (relatedObject == null)
                 continue;
 
+            //if foreign key is in this object, add columns to insert query
             if (relation.getRelationType() == RelationType.MANY_TO_ONE || (relation.getRelationType() == RelationType.ONE_TO_ONE && relation.getMySideKey())) {
                 columnNames.addAll(relation.getForeignKeyNames());
                 EntityMetadata relationEntity = MetadataStorage.get(relatedObject.getClass());
                 getKeyValues(relationEntity, relatedObject, columnValues);
             }
+            //in other cases, as there is generated PK support, that generated key is needed for relation update
         }
         String query = dialect instanceof Dialect.UsesInsertReturning d ? d.generateInsertQuery(columnNames, meta.getTableName(), extractKeys(meta)) : dialect.generateInsertQuery(columnNames, meta.getTableName());
         return new PreparedStatementQuery(query, columnValues);
     }
 
+    /**
+     * Generates INSERT queries for all MANY_TO_MANY relations in the given object.
+     * Object must have the primary key inside.
+     * */
     public List<PreparedStatementQuery> generateManyToManyInserts(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
@@ -98,6 +110,10 @@ public class DBUpdateSolver {
         return queries;
     }
 
+    /**
+     * Generates UPDATE query for the object in DB table with the same PK.
+     * If ignoreNulls is true, NULL valued fields are omitted in SET clause.
+     */
     public PreparedStatementQuery updateObject(Object object, boolean ignoreNulls) {
         EntityMetadata meta = MetadataStorage.get(object.getClass());
         if (meta == null)
@@ -126,6 +142,9 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
     }
 
+    /**
+     * Generated DELETE query for the given object using its PK
+     */
     public PreparedStatementQuery deleteObject(Object obj) {
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
         if (meta == null)
@@ -142,6 +161,10 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumnNames, meta.getTableName()), keyColumnValues);
     }
 
+    /**
+     * Creates INSERT or UPDATE query to connect two objects depending on the relation type.
+     * Supports all relationship types.
+     */
     public PreparedStatementQuery connect(Object obj1, Object obj2, String relationName) {
         EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
         EntityMetadata meta2 = MetadataStorage.get(obj2.getClass());
@@ -188,6 +211,11 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(dialect.generateInsertQuery(columnNames, rel.getJoinedTableName()), columnValues);
     }
 
+    /**
+     * Generates UPDATE od DELETE query to disconnect two given objects.
+     * Disconnects two objects by placing NULL value in foreign key column,
+     * or in case of MANY_TO_MANY relations, deletes the specific row in the joined table.
+     */
     public PreparedStatementQuery disconnect(Object obj1, Object obj2, String relationName) {
         EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
         if (meta1 == null)
@@ -232,7 +260,7 @@ public class DBUpdateSolver {
             getKeyValues(meta2, obj2, columnValues);
             return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
         }
-        //case MANY-TO-MANY -> insert both keys in joined table
+        //case MANY-TO-MANY -> add both keys to DELETE query
         if (obj2 == null) {
             throw new NullPointerException("Both objects in MANY_TO_MANY relation must be given!");
         }
@@ -256,6 +284,7 @@ public class DBUpdateSolver {
         return keys;
     }
 
+    /** Helper function for extracting column name and value into their specific lists for constructing the prepared statements */
     private void extractColumnNameAndValue(List<String> columnNames, List<Literal> columnValues, ColumnMetadata col, Object instance) {
         columnNames.add(col.getColumnName());
         Literal value = makeLiteral(col.getField(), instance);
@@ -264,6 +293,7 @@ public class DBUpdateSolver {
         columnValues.add(value);
     }
 
+    /** Helper function to extract the values of primary keys of some object */
     private void getKeyValues(EntityMetadata meta, Object obj, List<Literal> columnValues) {
         for (var key : meta.getIdFields()) {
             Object value = extractFieldValue(key, obj);
@@ -273,6 +303,7 @@ public class DBUpdateSolver {
         }
     }
 
+    /** Helper function for extracting the value of the field*/
     private Object extractFieldValue(Field field, Object instance) {
         try {
             return PropertyUtils.getProperty(instance, field.getName());
@@ -281,10 +312,12 @@ public class DBUpdateSolver {
         }
     }
 
+    /** Helper function to make Literal expression of the field value */
     private Literal makeLiteral(Field field, Object instance) {
         return makeLiteral(extractFieldValue(field, instance));
     }
 
+    /** Helper function to make Literal expression from given value */
     private Literal makeLiteral(Object obj) {
         return switch (obj) {
             case null -> new Literal.NullCnst();
