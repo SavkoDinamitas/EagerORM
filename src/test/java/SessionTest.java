@@ -110,6 +110,18 @@ public class SessionTest {
         assertThat(projects.getFirst()).usingRecursiveComparison().isEqualTo(myProject);
     }
 
+    @Test
+    void testInsertWithOneToManyRelation(Session session) throws SQLException {
+        Department myDepartment = new Department(50, "MyDepartment");
+        Employee Steven = new Employee(100, "Steven", "King", LocalDate.of(2003, 6, 17));
+        myDepartment.setEmployees(List.of(Steven));
+        session.insert(myDepartment);
+        QueryBuilder qb = QueryBuilder.select(Employee.class).join("department").join("department.employees").where(field("employee_id").eq(lit(100)));
+        List<Employee> employees = session.executeSelect(qb, Employee.class);
+        Steven.setDepartment(myDepartment);
+        assertThat(employees.getFirst()).usingRecursiveComparison().isEqualTo(Steven);
+    }
+
     //update tests
     @Test
     void testUpdate(Session session) throws SQLException {
