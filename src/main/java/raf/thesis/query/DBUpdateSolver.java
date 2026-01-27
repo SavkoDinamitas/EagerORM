@@ -105,7 +105,7 @@ public class DBUpdateSolver {
     }
 
     /**
-     * Generates INSERT queries for all MANY_TO_MANY relations in the given object.
+     * Generates UPSERT queries for all MANY_TO_MANY relations in the given object.
      * Object must have the primary key inside.
      * */
     public List<PreparedStatementQuery> generateManyToManyInserts(Object obj) {
@@ -134,7 +134,7 @@ public class DBUpdateSolver {
                     EntityMetadata relationEntity = MetadataStorage.get(instance.getClass());
                     getKeyValues(relationEntity, instance, colValues);
 
-                    queries.add(new PreparedStatementQuery(dialect.generateInsertQuery(cols, relation.getJoinedTableName()), colValues));
+                    queries.add(new PreparedStatementQuery(dialect.generateUpsertQuery(cols, relation.getJoinedTableName(), cols), colValues));
                 }
             }
         }
@@ -169,6 +169,7 @@ public class DBUpdateSolver {
                     columnValues.add(value);
             }
         }
+        //key columns should be at the end
         columnValues.addAll(keyColumnValues);
         return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
     }
@@ -272,13 +273,13 @@ public class DBUpdateSolver {
             getKeyValues(meta2, obj2, columnValues);
             return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
         }
-        //case MANY-TO-MANY -> insert both keys in joined table
+        //case MANY-TO-MANY -> upsert both keys in joined table
         List<String> columnNames = new ArrayList<>(rel.getMyJoinedTableFks());
         columnNames.addAll(rel.getForeignKeyNames());
         List<Literal> columnValues = new ArrayList<>();
         getKeyValues(meta1, obj1, columnValues);
         getKeyValues(meta2, obj2, columnValues);
-        return new PreparedStatementQuery(dialect.generateInsertQuery(columnNames, rel.getJoinedTableName()), columnValues);
+        return new PreparedStatementQuery(dialect.generateUpsertQuery(columnNames, rel.getJoinedTableName(), columnNames), columnValues);
     }
 
     /**

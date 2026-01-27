@@ -335,11 +335,13 @@ public class Session {
     /**
      * Persists a new entity instance if there is no object with the same
      * primary key in DB table.
-     * If there is one, updates its columns and relations to new values.
+     * If there is one, updates its column values and relations.
      * <p>
      * Entity instance is persisted with all relations if related
      * entity objects are already in the DB, otherwise it will fail the
      * foreign key constraint.
+     * <p>
+     * Update will ignore null-valued relations, old values will remain the same.
      *
      * @param obj entity to insert or update if existent
      */
