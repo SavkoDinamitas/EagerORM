@@ -32,9 +32,12 @@ public class ANSISQLDialect implements Dialect {
 
     @Override
     public String generateJoinClause(JoinNode joinNode){
-        String onClause = "%s = %s".formatted(generateKeyTuple(joinNode.getJoiningTableAlias(), joinNode.getJoiningTablePk()),
+        return "%s JOIN %s AS %s ON (%s)".formatted(joinNode.getJoinType().name(), joinNode.getTableName(), quote(joinNode.getJoiningTableAlias()), generateOnJoinClause(joinNode));
+    }
+
+    protected String generateOnJoinClause(JoinNode joinNode){
+        return "%s = %s".formatted(generateKeyTuple(joinNode.getJoiningTableAlias(), joinNode.getJoiningTablePk()),
                 generateKeyTuple(joinNode.getForeignTableAlias(), joinNode.getForeignTableFk()));
-        return "%s JOIN %s AS %s ON (%s)".formatted(joinNode.getJoinType().name(), joinNode.getTableName(), quote(joinNode.getJoiningTableAlias()), onClause);
     }
 
     private String generateKeyTuple(String tableAlias, List<String> tableColumns){
