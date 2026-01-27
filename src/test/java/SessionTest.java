@@ -17,7 +17,7 @@ import static raf.thesis.query.ConditionBuilder.*;
 @SuppressWarnings("JUnitMalformedDeclaration")
 @MultiDBTest
 public class SessionTest {
-
+    //TODO: composite key detailed tests
     //insert tests
     @Test
     void testSimpleInsert(Session session) throws SQLException {

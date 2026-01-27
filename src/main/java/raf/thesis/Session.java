@@ -239,7 +239,6 @@ public class Session {
      * @param obj entity to insert
      * @return inserted entity with generated primary keys
      */
-    //TODO: add all relation insertion support, even when foreign key is in other object
     public <T> T insert(T obj) throws SQLException {
         return runBody((conn -> {
             PreparedStatementQuery mainInsert = DBUpdateSolver.generateInsert(obj);
