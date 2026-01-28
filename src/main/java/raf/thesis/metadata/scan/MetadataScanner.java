@@ -36,7 +36,7 @@ public class MetadataScanner {
     /**
      * Scans the classpath to build all necessary metadata stored in {@link MetadataStorage}.
      * If packages are given, scans only those packages. Otherwise, scans the whole classpath.
-     * @param basePackages
+     * @param basePackages packages of project to scan for entities and PDO-s
      */
     public synchronized void discoverMetadata(String... basePackages) {
         if (initialized) {
