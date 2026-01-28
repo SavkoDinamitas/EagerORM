@@ -30,7 +30,7 @@ public class DBUpdateSolver {
      * that have the foreign key in the table of the given object.
      * As there is generated primary key support,
      * other queries for relation solving must be made after this first insert.
-     * If key is marked as generated, it will always be skipped.
+     * If PK is marked as generated, it will always be skipped in query generation.
      * */
     public PreparedStatementQuery generateInsert(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
@@ -74,6 +74,10 @@ public class DBUpdateSolver {
         return new PreparedStatementQuery(query, columnValues);
     }
 
+    /**
+     * Generates UPDATE queries for all obj relations which foreign keys are not inside obj.
+     * Doesn't include MANY_TO_MANY relations.
+     */
     public List<PreparedStatementQuery> generateRelationshipUpdateQueries(Object obj) {
         List<PreparedStatementQuery> queries = new ArrayList<>();
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
@@ -175,7 +179,9 @@ public class DBUpdateSolver {
     }
 
     /**
-     * Generates MERGE query for the given object.
+     * Generates MERGE query for the given object. If object is not present in DB, works the same as INSERT,
+     * if it is, updates all direct fields and relations. Ignores NULL-valued relations -> old relations content
+     * stays the same.
      * */
     public List<PreparedStatementQuery> upsertObject(Object object){
         EntityMetadata meta = MetadataStorage.get(object.getClass());
@@ -233,8 +239,8 @@ public class DBUpdateSolver {
     }
 
     /**
-     * Creates INSERT or UPDATE query to connect two objects depending on the relation type.
-     * Supports all relationship types.
+     * Creates UPSERT (for MANY_TO_MANY relations) or UPDATE (for other relation types) query
+     * to connect two objects depending on the relation type. Supports all relationship types.
      */
     public PreparedStatementQuery connect(Object obj1, Object obj2, String relationName) {
         EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
