@@ -6,6 +6,9 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing table columns with EagerORM specific aliases
+ */
 @AllArgsConstructor
 @Getter
 public class FieldNode implements Expression{

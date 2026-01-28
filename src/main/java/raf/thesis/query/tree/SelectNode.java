@@ -7,6 +7,11 @@ import raf.thesis.query.Join;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Root of select query AST.
+ * Select query AST is used to store {@link raf.thesis.query.QueryBuilder} method calls.
+ * Contains required information for generating {@code SELECT} and {@code FROM} clause.
+ */
 @Getter
 public class SelectNode {
     private final Class<?> root;

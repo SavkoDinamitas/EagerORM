@@ -7,6 +7,10 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing unary operations.
+ * Supported operations: {@link UnaryOpCode}
+ */
 @Getter
 @Setter
 @AllArgsConstructor

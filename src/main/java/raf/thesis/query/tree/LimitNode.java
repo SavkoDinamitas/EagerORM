@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Select query AST node for storing required data for {@code LIMIT} clause generation.
+ */
 @NoArgsConstructor
 @Getter
 @Setter

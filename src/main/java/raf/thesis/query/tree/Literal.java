@@ -7,6 +7,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * Expression tree node for storing literals.
+ * Supports all literal types in ANSI SQL dialects.
+ */
 public sealed interface Literal extends Expression{
     public record DoubleCnst(double x) implements Literal {
         @Override

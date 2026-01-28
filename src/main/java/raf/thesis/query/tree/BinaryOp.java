@@ -8,6 +8,10 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing binary operations.
+ * Supported operations: {@link BinaryOpCode}
+ */
 @AllArgsConstructor
 @Getter @Setter
 @NoArgsConstructor

@@ -12,15 +12,15 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * {@code QueryBuilder} provides a simple API for constructing SQL queries compatible with ORM.
- * It supports standard query clauses including {@code SELECT}, {@code WHERE}, {@code GROUP BY}, {@code HAVING},
- * {@code ORDER BY}, {@code JOIN}, {@code DISTINCT}, as well as pagination through {@code OFFSET} and {@code LIMIT}.
+ * Provides a simple API for constructing SQL queries compatible with EagerORM.
+ * Supports standard SQL query clauses and expressions via {@link ConditionBuilder} class
+ * and {@link Expression} methods.
  * <p>
  * The builder is compatible with both entity-mapped objects and Plain Data Objects (PDOs) annotated
  * with {@link raf.thesis.metadata.annotations.PDO}. For PDOs, select expressions may include custom aliases
  * that directly correspond to object fields.
  * <p>
- * Additionally, it provides integration with {@link SubQueryBuilder} for constructing subquery expressions,
+ * Provides integration with {@link SubQueryBuilder} for constructing subquery expressions,
  * allowing the composition of complex queries.
  */
 public class QueryBuilder {

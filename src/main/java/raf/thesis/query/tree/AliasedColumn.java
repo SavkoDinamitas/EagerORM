@@ -6,6 +6,10 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing columns with specific user aliases.
+ * Used for {@link raf.thesis.metadata.annotations.PDO} queries.
+ */
 @Getter@AllArgsConstructor
 public class AliasedColumn implements Expression{
     private Expression expression;

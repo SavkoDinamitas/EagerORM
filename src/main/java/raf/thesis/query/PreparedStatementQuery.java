@@ -7,6 +7,9 @@ import raf.thesis.query.tree.Literal;
 
 import java.util.List;
 
+/**
+ * Special class for storing required data for prepared statement query generation.
+ */
 @Getter@Setter@AllArgsConstructor
 public class PreparedStatementQuery {
     String query;

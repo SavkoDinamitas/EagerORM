@@ -7,6 +7,9 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing tuples of expressions.
+ */
 @Getter
 @Setter
 @AllArgsConstructor

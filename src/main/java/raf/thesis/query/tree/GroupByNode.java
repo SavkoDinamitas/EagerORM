@@ -6,6 +6,9 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * Select query AST node for storing required data for {@code GROUP BY} clause generation.
+ */
 @AllArgsConstructor
 @Getter
 @Setter

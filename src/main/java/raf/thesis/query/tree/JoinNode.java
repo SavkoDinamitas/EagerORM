@@ -5,6 +5,9 @@ import lombok.Getter;
 import raf.thesis.query.Join;
 import java.util.List;
 
+/**
+ * Select query AST node for storing required data for single {@code JOIN} clause generation.
+ */
 @Getter
 @AllArgsConstructor
 public class JoinNode {

@@ -7,6 +7,10 @@ import raf.thesis.query.dialect.Dialect;
 
 import java.util.List;
 
+/**
+ * Expression tree node for storing functions.
+ * Supported functions: {@link FunctionCode}
+ */
 @AllArgsConstructor
 @Setter
 @Getter
