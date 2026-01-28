@@ -44,9 +44,20 @@ public class DefaultMapperImplementation implements RowMapper {
         return instances;
     }
 
-    //result set is in specific format that my query builder will make
-    //for each row, i should make instances of objects by navigating through relations to find the right one
-    //for each object, i need to handle duplicates by putting them in map with list of path, .class and PK as key
+    /**
+     * ResultSet column aliases must be a dot separated relation path from root object.
+     * Root table alias is "%root", so for root table columns, aliases should be "%root.colName".
+     * For other columns, aliases should be "%root.relationName1.relationName2...colName" to specify
+     * which two objects are related.
+     * Algorithm goes row by row:
+     * In each row detect all objects and create their instances with mapped attributes.
+     * Using one global map deduplicate entities with same primary keys. Key of the map is list of .class
+     * type of entity and value of its primary key. After deduplication, connect objects that are in same
+     * row using the above-mentioned aliases: take the last relation in path and find object that is gotten to
+     * via the prefix of the path. Insert first object in relation field of the prefix object by finding the
+     * relation with that name. At the end, only the objects that have relation path "%root" are returned by
+     * inserting them in LinkedSet to preserve order and deduplicate.
+     */
     @Override
     public <T> List<T> mapWithRelations(ResultSet rs, Class<T> clazz) {
         Map<List<Object>, Object> madeObjects = new HashMap<>();
@@ -92,11 +103,12 @@ public class DefaultMapperImplementation implements RowMapper {
                     if (freshObjectEntry.getValue().equals(NullMarker.NULL)) {
                         continue;
                     }
-                    //these are original object required to return
+                    //these are original object required to return (relation path is "%root")
                     if (path.size() == 1) {
                         returningObjects.add(madeObjects.get(getPrimaryKey(freshObjectEntry.getValue())));
                         continue;
                     }
+                    //if path is longer than 1, object should be connected to its predecessor in relation path
                     List<Object> myKey = getPrimaryKey(freshObjectEntry.getValue());
                     String relation = path.getLast();
                     path.removeLast();
@@ -127,7 +139,12 @@ public class DefaultMapperImplementation implements RowMapper {
         }
     }
 
-    //depending on the type of relation, populate missing objects
+    /**
+     * Depending on the type of relation, populate missing objects.
+     * Find the relation with the same name in parent and add child
+     * to its relation field. If it is a list add a new element, else
+     * just set it to child.
+     */
     private void solveRelations(Object parent, Object child, String relationName) {
         Class<?> parentClass = parent.getClass();
         EntityMetadata parentMetadata = MetadataStorage.get(parentClass);
@@ -147,10 +164,6 @@ public class DefaultMapperImplementation implements RowMapper {
                 } else {
                     ((List) listObject).add(child);
                 }
-                //fill both sides if foreignRelation is present
-                /*if(relation.getForeignRelationName() != null) {
-                    solveRelations(child, parent, relation.getForeignRelationName());
-                }*/
             } else {
                 Field fk = relation.getForeignField();
                 fk.setAccessible(true);
@@ -162,7 +175,9 @@ public class DefaultMapperImplementation implements RowMapper {
 
     }
 
-    //traverse through path to find right class
+    /**
+     * Traverse through relation path to find required class type
+     */
     private Class<?> findInstanceType(List<String> path, Class<?> start) {
         Class<?> current = start;
         for (int i = 1; i < path.size(); i++) {
@@ -177,6 +192,9 @@ public class DefaultMapperImplementation implements RowMapper {
         return current;
     }
 
+    /**
+     * Make a new instance of clazz type with mapped fields from ResultSet row.
+     */
     private <T> T singleRowMap(ResultSet rs, Class<T> clazz) {
         EntityMetadata entityMetadata = MetadataStorage.get(clazz);
 
@@ -194,6 +212,9 @@ public class DefaultMapperImplementation implements RowMapper {
         return singleRowMap(rs, instance);
     }
 
+    /**
+     * Map single row of a ResultSet into a given instance
+     */
     private <T> T singleRowMap(ResultSet rs, T instance){
         //for each column in result set, find the designated field
         // and do the conversion to java datatype
@@ -212,7 +233,10 @@ public class DefaultMapperImplementation implements RowMapper {
         }
     }
 
-    //maps single column value to property in instance, returns false if DB null object mapping is detected
+    /**
+     * Maps single column value to property in instance,
+     * returns false if DB null object mapping is detected.
+     */
     private boolean mapSingleProperty(Object instance, String resultSetColumnName, String columnName, ResultSet rs) {
         try {
             Class<?> clazz = instance.getClass();
@@ -256,14 +280,14 @@ public class DefaultMapperImplementation implements RowMapper {
         }
     }
 
-    //construct instance of enum that is given
+    /** Construct instance of enum that is given */
     private <E extends Enum<E>> E enumFromString(Class<?> enumClass, String value) {
         assert enumClass.isEnum();
         if (value == null) return null;
         return Enum.valueOf((Class<E>) enumClass, value);
     }
 
-
+    /** Extract primary key value from instance */
     private List<Object> getPrimaryKey(Object instance) {
         try {
             EntityMetadata objectMetadata = MetadataStorage.get(instance.getClass());
@@ -276,10 +300,11 @@ public class DefaultMapperImplementation implements RowMapper {
             }
             return keys;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to exctract primary key from object " + instance.getClass(), e);
+            throw new RuntimeException("Failed to extract primary key from object " + instance.getClass(), e);
         }
     }
 
+    //map for solving primitive java types
     private static final Map<Class<?>, Class<?>> primitiveTypes = Map.of(
             boolean.class, Boolean.class,
             byte.class, Byte.class,
@@ -296,6 +321,4 @@ public class DefaultMapperImplementation implements RowMapper {
     }
 
     private enum NullMarker {NULL}
-
-    ;
 }
