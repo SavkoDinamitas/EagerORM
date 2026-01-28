@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.lang.reflect.Field;
 import java.util.*;
 
+/**
+ * Entity metadata store.
+ */
 @Getter @Setter @AllArgsConstructor @NoArgsConstructor
 public class EntityMetadata {
     private String tableName;

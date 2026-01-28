@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.lang.reflect.Field;
 import java.util.List;
 
+/**
+ * Relation metadata store.
+ */
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class RelationMetadata {
     Field foreignField;

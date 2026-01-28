@@ -23,11 +23,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Main class for scanning classpath to extract {@link Entity} and {@link PDO} annotated classes.
+ * Scans the annotated classes and builds metadata that is stored in {@link MetadataStorage} for
+ * global usage in EagerORM layers.
+ */
 public class MetadataScanner {
     private boolean initialized = false;
     private final List<RelationMetadata> solveForeignKeys = new ArrayList<>();
     private final List<RelationMetadata> madeRelations = new ArrayList<>();
 
+    /**
+     * Scans the classpath to build all necessary metadata stored in {@link MetadataStorage}.
+     * If packages are given, scans only those packages. Otherwise, scans the whole classpath.
+     * @param basePackages
+     */
     public synchronized void discoverMetadata(String... basePackages) {
         if (initialized) {
             return;
@@ -73,6 +83,10 @@ public class MetadataScanner {
         initialized = true;
     }
 
+    /**
+     * Discovers everything needed in {@link PDO} annotated class.
+     * PDOs doesn't support relations.
+     */
     private void processPDO(Class<?> clazz) {
         EntityMetadata metadata = new EntityMetadata();
         metadata.setEntityClass(clazz);
@@ -83,6 +97,9 @@ public class MetadataScanner {
         MetadataStorage.register(metadata);
     }
 
+    /**
+     * Builds {@link ColumnMetadata} for fields and further fills {@link EntityMetadata}
+     */
     private void processPDOsFields(Field field, EntityMetadata meta) {
         if (field.isAnnotationPresent(Column.class)) {
             Column columnAnn = field.getAnnotation(Column.class);
@@ -101,6 +118,10 @@ public class MetadataScanner {
         }
     }
 
+    /**
+     * Discovers everything needed in {@link Entity} annotated class,
+     * including the relation metadata.
+     */
     private void processEntity(Class<?> clazz) {
         Entity entityAnn = clazz.getAnnotation(Entity.class);
 
@@ -133,14 +154,19 @@ public class MetadataScanner {
         MetadataStorage.register(meta);
     }
 
+    /**
+     * Builds {@link ColumnMetadata} for fields and further fills {@link EntityMetadata}
+     */
     private void processField(Field field, Class<?> clazz, EntityMetadata meta) {
         boolean columnMade = false;
+        //primary key fields
         if (field.isAnnotationPresent(Id.class)) {
             meta.getIdFields().add(field);
             Id annotation = field.getAnnotation(Id.class);
             assert annotation != null;
             meta.getGeneratedId().add(annotation.generated());
         }
+        //column annotations
         if (field.isAnnotationPresent(Column.class)) {
             Column columnAnn = field.getAnnotation(Column.class);
             ColumnMetadata columnMeta = new ColumnMetadata();
@@ -151,6 +177,7 @@ public class MetadataScanner {
             meta.getColumns().put(columnMeta.getColumnName(), columnMeta);
             columnMade = true;
         }
+        //solve ONE_TO_ONE relations
         if (field.isAnnotationPresent(OneToOne.class)) {
             OneToOne oneAnn = field.getAnnotation(OneToOne.class);
             RelationMetadata relationMetadata = new RelationMetadata();
@@ -170,6 +197,7 @@ public class MetadataScanner {
             meta.getRelations().add(relationMetadata);
             columnMade = true;
         }
+        //solve ONE_TO_MANY relations
         if (field.isAnnotationPresent(OneToMany.class)) {
             OneToMany ann = field.getAnnotation(OneToMany.class);
             RelationMetadata relationMetadata = new RelationMetadata();
@@ -188,6 +216,7 @@ public class MetadataScanner {
             meta.getRelations().add(relationMetadata);
             columnMade = true;
         }
+        //solve MANY_TO_ONE relations
         if (field.isAnnotationPresent(ManyToOne.class)) {
             ManyToOne ann = field.getAnnotation(ManyToOne.class);
             RelationMetadata relationMetadata = new RelationMetadata();
@@ -205,6 +234,7 @@ public class MetadataScanner {
             meta.getRelations().add(relationMetadata);
             columnMade = true;
         }
+        //solve MANY_TO_MANY relations
         if (field.isAnnotationPresent(ManyToMany.class)) {
             ManyToMany ann = field.getAnnotation(ManyToMany.class);
             RelationMetadata relationMetadata = new RelationMetadata();
@@ -245,21 +275,21 @@ public class MetadataScanner {
         }
     }
 
-    //extract class type from list
+    /** Extract class type from list field */
     private Class<?> getListElementType(Class<?> clazz, Field field, RelationType relationType) {
-        // 1. Must be assignable to List
+        //must be assignable to List
         if (!List.class.isAssignableFrom(field.getType())) {
             throw new ListFieldRequiredException("Field " + field.getName() + " of class " +
                     clazz.getSimpleName() + " must be a list for " + relationType + " relation");
         }
 
-        // 2. Must have generic type info
+        //must have generic type info
         Type genericType = field.getGenericType();
         if (!(genericType instanceof ParameterizedType pType)) {
             throw new ListFieldRequiredException("Incorrect type for list for field " + field.getName() + " in class " + clazz.getSimpleName());
         }
 
-        // 3. List has one type argument: List<X>
+        //List has one type argument: List<X>
         Type[] typeArguments = pType.getActualTypeArguments();
         if (typeArguments.length != 1) {
             throw new ListFieldRequiredException("Only one type inside list for field: " + field.getName() + " in class " + clazz.getSimpleName() + " required");
@@ -267,7 +297,7 @@ public class MetadataScanner {
 
         Type elementType = typeArguments[0];
 
-        // 4. Element must be a class
+        //element must be a class
         if (elementType instanceof Class<?>) {
             return (Class<?>) elementType;
         }
@@ -275,7 +305,7 @@ public class MetadataScanner {
         throw new RuntimeException("Getting list elements type failed!");
     }
 
-    //fill foreign keys by default with primary keys of their related classes
+    /** Fill foreign keys by default with primary keys of their related classes */
     private void solveRelationWithoutFK(RelationMetadata relationMetadata) {
         EntityMetadata myEntity = MetadataStorage.get(relationMetadata.getForeignField().getDeclaringClass());
         EntityMetadata foreignEntity = MetadataStorage.get(relationMetadata.getForeignClass());
@@ -297,6 +327,7 @@ public class MetadataScanner {
         }
     }
 
+    /** Extract names of primary key columns */
     private List<String> extractPKNames(EntityMetadata metadata){
         List<String> keys = new ArrayList<>();
         for(var column : metadata.getColumns().values()){

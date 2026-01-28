@@ -8,6 +8,9 @@ import lombok.Setter;
 import java.lang.reflect.Field;
 
 
+/**
+ * Column metadata store.
+ */
 @Getter @Setter @NoArgsConstructor
 public class ColumnMetadata {
     private String columnName;
