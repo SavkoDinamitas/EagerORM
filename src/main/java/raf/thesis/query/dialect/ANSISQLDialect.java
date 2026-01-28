@@ -5,6 +5,9 @@ import raf.thesis.query.tree.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Main implementation of {@link Dialect} that generates SQL queries by ANSI rules.
+ */
 public class ANSISQLDialect implements Dialect {
     protected String quote(String value){
         return "\"" + value.replaceAll("\"", "\"\"") + "\"";

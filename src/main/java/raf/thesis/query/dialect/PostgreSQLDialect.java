@@ -2,6 +2,9 @@ package raf.thesis.query.dialect;
 
 import java.util.List;
 
+/**
+ * SQL dialect implementation for PostgreSQL and PSQL-compatible databases.
+ */
 public class PostgreSQLDialect extends ANSISQLDialect{
     @Override
     public String generateUpsertQuery(List<String> columnNames, String tableName, List<String> keyColumnNames){

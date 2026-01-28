@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * SQL dialect implementation for MariaDB and MySQL-compatible databases.
+ */
 public class MariaDBDialect extends ANSISQLDialect implements Dialect.UsesInsertReturning{
     @Override
     protected String quote(String value){

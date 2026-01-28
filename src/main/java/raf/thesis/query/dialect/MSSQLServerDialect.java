@@ -6,6 +6,9 @@ import raf.thesis.query.tree.Literal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * SQL dialect implementation for Microsoft SQL Server and MSSQL-compatible databases.
+ */
 public class MSSQLServerDialect extends ANSISQLDialect implements Dialect.UsesInsertReturning{
 
     @Override
