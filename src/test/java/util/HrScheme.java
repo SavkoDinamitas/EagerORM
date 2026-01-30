@@ -890,7 +890,7 @@ public class HrScheme {
                 Department.class,
                 List.of(Department.class.getDeclaredField("department_id")),
                 map,
-                List.of(new RelationMetadata(
+                Map.of("employees", new RelationMetadata(
                         Department.class.getDeclaredField("employees"),
                         "employees",
                         RelationType.ONE_TO_MANY,
@@ -906,19 +906,19 @@ public class HrScheme {
                         Employee.class,
                         List.of(Employee.class.getDeclaredField("employee_id")),
                         emap,
-                        List.of(new RelationMetadata(
+                        Map.of("department", new RelationMetadata(
                                 Employee.class.getDeclaredField("department"),
                                 "department",
                                 RelationType.MANY_TO_ONE,
                                 Department.class
                                 ),
-                                new RelationMetadata(
+                                "manager", new RelationMetadata(
                                         Employee.class.getDeclaredField("manager"),
                                         "manager",
                                         RelationType.MANY_TO_ONE,
                                         Employee.class
                                         ),
-                                new RelationMetadata(
+                                "projects", new RelationMetadata(
                                         Employee.class.getDeclaredField("projects"),
                                         "projects",
                                         RelationType.MANY_TO_MANY,
@@ -938,7 +938,7 @@ public class HrScheme {
                 Project.class,
                 List.of(Project.class.getDeclaredField("project_id")),
                 pmap,
-                List.of(new RelationMetadata(
+                Map.of("employees", new RelationMetadata(
                         Project.class.getDeclaredField("employees"),
                         "employees",
                         RelationType.MANY_TO_MANY,

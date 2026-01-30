@@ -25,8 +25,8 @@ public class Club {
         Map<String, ColumnMetadata> cols = new HashMap<>();
         cols.put("id", new ColumnMetadata("id", Club.class.getDeclaredField("id")));
         cols.put("name", new ColumnMetadata("name", Club.class.getDeclaredField("name")));
-        List<RelationMetadata> rels = new ArrayList<>();
-        rels.add(new RelationMetadata(Club.class.getDeclaredField("players"), "players", RelationType.ONE_TO_MANY, Player.class, List.of("id"), null, null, null));
+        Map<String, RelationMetadata> rels = new HashMap<>();
+        rels.put("players", new RelationMetadata(Club.class.getDeclaredField("players"), "players", RelationType.ONE_TO_MANY, Player.class, List.of("id"), null, null, null));
         return new EntityMetadata("clubs", Club.class, List.of(Club.class.getDeclaredField("id")), cols, rels, List.of(false));
     }
 }

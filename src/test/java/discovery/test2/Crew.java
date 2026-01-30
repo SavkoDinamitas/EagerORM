@@ -34,9 +34,9 @@ public class Crew {
         Map<String, ColumnMetadata> cols = new HashMap<>();
         cols.put("crewid", new ColumnMetadata("crewid", Crew.class.getDeclaredField("crewID")));
         cols.put("crewnumber", new ColumnMetadata("crewnumber", Crew.class.getDeclaredField("crewSize")));
-        List<RelationMetadata> rel = new ArrayList<>();
-        rel.add(new RelationMetadata(Crew.class.getDeclaredField("pilot"), "pilot", RelationType.ONE_TO_ONE, Pilot.class, List.of("crewid"), null, null, null, false));
-        rel.add(new RelationMetadata(Crew.class.getDeclaredField("flights"), "finished_flights", RelationType.ONE_TO_MANY, Flight.class, List.of("fk_flights"), null, null, null));
+        Map<String, RelationMetadata> rel = new HashMap<>();
+        rel.put("pilot", new RelationMetadata(Crew.class.getDeclaredField("pilot"), "pilot", RelationType.ONE_TO_ONE, Pilot.class, List.of("crewid"), null, null, null, false));
+        rel.put("finished_flights", new RelationMetadata(Crew.class.getDeclaredField("flights"), "finished_flights", RelationType.ONE_TO_MANY, Flight.class, List.of("fk_flights"), null, null, null));
         return new EntityMetadata("crews", Crew.class, List.of(Crew.class.getDeclaredField("crewID")), cols, rel, List.of(false));
     }
 }

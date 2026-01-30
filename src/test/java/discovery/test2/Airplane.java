@@ -33,8 +33,8 @@ public class Airplane {
         Map<String, ColumnMetadata> cols = new HashMap<>();
         cols.put("id", new ColumnMetadata("id", Airplane.class.getDeclaredField("id")));
         cols.put("name", new ColumnMetadata("name", Airplane.class.getDeclaredField("name")));
-        List<RelationMetadata> rel = new ArrayList<>();
-        rel.add(new RelationMetadata(Airplane.class.getDeclaredField("flights"), "flights", RelationType.MANY_TO_MANY, Flight.class, List.of("flightnumber"), "airplanes_flights", List.of("id"), null));
+        Map<String, RelationMetadata> rel = new HashMap<>();
+        rel.put("flights", new RelationMetadata(Airplane.class.getDeclaredField("flights"), "flights", RelationType.MANY_TO_MANY, Flight.class, List.of("flightnumber"), "airplanes_flights", List.of("id"), null));
         return new EntityMetadata("airplanes", Airplane.class, List.of(Airplane.class.getDeclaredField("id")), cols, rel, List.of(false));
     }
 }
