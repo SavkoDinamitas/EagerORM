@@ -241,16 +241,15 @@ public class QueryBuilder {
         Class<?> foreignClass = findInstanceType(foreignTableAlias, root);
         EntityMetadata foreignMetadata = MetadataStorage.get(foreignClass);
         String relationName = joiningRelationPath.substring(joiningRelationPath.lastIndexOf(".") + 1);
-        Optional<RelationMetadata> relationMetadata = foreignMetadata.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
+        RelationMetadata rel = foreignMetadata.getRelations().get(relationName.toLowerCase());
         //check if relation exists
-        if(relationMetadata.isEmpty())
+        if(rel == null)
             throw new InvalidRelationPathException(joiningRelationPath);
         //2 join nodes for many_to_many relations
-        if(relationMetadata.get().getRelationType() == RelationType.MANY_TO_MANY){
+        if(rel.getRelationType() == RelationType.MANY_TO_MANY){
             List<JoinNode> result = new ArrayList<>();
             //make node for joining table on first time joinedTableNameUse
             //no need to make new one for other side join in same query
-            RelationMetadata rel = relationMetadata.get();
             String joinedTableName = rel.getJoinedTableName();
             if(joinTables.add(joinedTableName)){
                 List<String> joiningTablePk = rel.getMyJoinedTableFks();
@@ -275,14 +274,13 @@ public class QueryBuilder {
             //others -> joining table has the fk that joins on old table pk
             List<String> joiningTablePk;
             List<String> foreignTableKeys;
-            var relation = relationMetadata.get();
-            if(relation.getRelationType() == RelationType.MANY_TO_ONE || (relation.getRelationType() == RelationType.ONE_TO_ONE && relation.getMySideKey())){
-                foreignTableKeys = relation.getForeignKeyNames();
+            if(rel.getRelationType() == RelationType.MANY_TO_ONE || (rel.getRelationType() == RelationType.ONE_TO_ONE && rel.getMySideKey())){
+                foreignTableKeys = rel.getForeignKeyNames();
                 joiningTablePk = extractKeys(joiningMetadata);
             }
             else{
                 foreignTableKeys = extractKeys(foreignMetadata);
-                joiningTablePk = relation.getForeignKeyNames();
+                joiningTablePk = rel.getForeignKeyNames();
             }
             return List.of(new JoinNode(joinType, tableName, joiningRelationPath, joiningTablePk, foreignTableAlias, foreignTableKeys));
         }
@@ -302,16 +300,10 @@ public class QueryBuilder {
             return start;
         for (String s : path.split("\\.")) {
             EntityMetadata currMeta = MetadataStorage.get(current);
-            boolean found = false;
-            for (var relation : currMeta.getRelations()) {
-                if (relation.getRelationName().equalsIgnoreCase(s)) {
-                    current = relation.getForeignClass();
-                    found = true;
-                    break;
-                }
-            }
-            if(!found)
+            var nextRel = currMeta.getRelations().get(s.toLowerCase());
+            if(nextRel == null)
                 throw new InvalidRelationPathException("Invalid relation path: " + path);
+            current = nextRel.getForeignClass();
         }
         return current;
     }

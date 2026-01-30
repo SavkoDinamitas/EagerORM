@@ -11,6 +11,7 @@ import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.RelationMetadata;
 import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
+import raf.thesis.query.exceptions.InvalidRelationPathException;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -148,7 +149,7 @@ public class DefaultMapperImplementation implements RowMapper {
     private void solveRelations(Object parent, Object child, String relationName) {
         Class<?> parentClass = parent.getClass();
         EntityMetadata parentMetadata = MetadataStorage.get(parentClass);
-        RelationMetadata relation = parentMetadata.getRelations().stream().filter(rel -> rel.getRelationName().equals(relationName)).findFirst().orElse(null);
+        RelationMetadata relation = parentMetadata.getRelations().get(relationName.toLowerCase());
         if (relation == null) {
             throw new RuntimeException("Relation " + relationName + " not found");
         }
@@ -182,12 +183,10 @@ public class DefaultMapperImplementation implements RowMapper {
         Class<?> current = start;
         for (int i = 1; i < path.size(); i++) {
             EntityMetadata currMeta = MetadataStorage.get(current);
-            for (var relation : currMeta.getRelations()) {
-                if (relation.getRelationName().equalsIgnoreCase(path.get(i))) {
-                    current = relation.getForeignClass();
-                    break;
-                }
-            }
+            var nextRel = currMeta.getRelations().get(path.get(i).toLowerCase());
+            if(nextRel == null)
+                throw new InvalidRelationPathException("Invalid relation path: " + path);
+            current = nextRel.getForeignClass();
         }
         return current;
     }

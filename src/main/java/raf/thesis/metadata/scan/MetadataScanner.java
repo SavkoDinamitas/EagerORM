@@ -143,14 +143,6 @@ public class MetadataScanner {
             throw new RequiredFieldException("Entity " + clazz.getSimpleName() + " requires id fields");
         }
 
-        //check for relation duplication
-        Set<String> relNames = new HashSet<>();
-        for(var relation : meta.getRelations()){
-            if(!relNames.add(relation.getRelationName()))
-                throw new DuplicateRelationNamesException("Multiple relations with name '" + relation.getRelationName() + "' in class "
-                        + meta.getClass().getSimpleName() + ". Relation names must be unique inside class!");
-        }
-
         MetadataStorage.register(meta);
     }
 
@@ -194,7 +186,7 @@ public class MetadataScanner {
                 relationMetadata.setForeignKeyNames(List.of(oneAnn.foreignKey()));
             }
             madeRelations.add(relationMetadata);
-            meta.getRelations().add(relationMetadata);
+            meta.addRelation(relationMetadata);
             columnMade = true;
         }
         //solve ONE_TO_MANY relations
@@ -213,7 +205,7 @@ public class MetadataScanner {
                 relationMetadata.setForeignKeyNames(List.of(ann.foreignKey()));
             }
             madeRelations.add(relationMetadata);
-            meta.getRelations().add(relationMetadata);
+            meta.addRelation(relationMetadata);
             columnMade = true;
         }
         //solve MANY_TO_ONE relations
@@ -231,7 +223,7 @@ public class MetadataScanner {
             } else
                 relationMetadata.setForeignKeyNames(List.of(ann.foreignKey()));
             madeRelations.add(relationMetadata);
-            meta.getRelations().add(relationMetadata);
+            meta.addRelation(relationMetadata);
             columnMade = true;
         }
         //solve MANY_TO_MANY relations
@@ -262,7 +254,7 @@ public class MetadataScanner {
                 solveForeignKeys.add(relationMetadata);
 
             madeRelations.add(relationMetadata);
-            meta.getRelations().add(relationMetadata);
+            meta.addRelation(relationMetadata);
             columnMade = true;
         }
 

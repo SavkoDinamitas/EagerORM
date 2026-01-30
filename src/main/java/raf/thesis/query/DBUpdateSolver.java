@@ -57,7 +57,7 @@ public class DBUpdateSolver {
         }
 
         //solve relations
-        for (var relation : meta.getRelations()) {
+        for (var relation : meta.getRelations().values()) {
             Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
             if (relatedObject == null)
                 continue;
@@ -85,7 +85,7 @@ public class DBUpdateSolver {
             throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
 
         //for each ONE_TO_MANY relation and ONE_TO_ONE with containsFK == false, make the update query
-        for(var relation : meta.getRelations()) {
+        for(var relation : meta.getRelations().values()) {
             Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
             //if relationship is empty, continue
             if (relatedObject == null)
@@ -118,7 +118,7 @@ public class DBUpdateSolver {
         if (meta == null)
             throw new EntityObjectRequiredException("Object: " + obj + " is not an entity");
 
-        for (var relation : meta.getRelations()) {
+        for (var relation : meta.getRelations().values()) {
             Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
             if (relatedObject == null)
                 continue;
@@ -198,7 +198,7 @@ public class DBUpdateSolver {
         }
 
         //solve relations
-        for (var relation : meta.getRelations()) {
+        for (var relation : meta.getRelations().values()) {
             Object relatedObject = extractFieldValue(relation.getForeignField(), object);
             if (relatedObject == null)
                 continue;
@@ -250,10 +250,9 @@ public class DBUpdateSolver {
         if (meta2 == null)
             throw new EntityObjectRequiredException("Object: " + obj2 + " is not an entity!");
 
-        Optional<RelationMetadata> relationOp = meta1.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
-        if (relationOp.isEmpty())
+        RelationMetadata rel = meta1.getRelations().get(relationName.toLowerCase());
+        if (rel == null)
             throw new InvalidRelationPathException("Given relation name doesn't exist in object: " + obj1);
-        RelationMetadata rel = relationOp.get();
 
         //case MANY-TO-ONE and ONE-TO-ONE with containsFK = true -> update foreign key in obj1 table
         if (rel.getRelationType() == RelationType.MANY_TO_ONE || (rel.getRelationType() == RelationType.ONE_TO_ONE && rel.getMySideKey())) {
@@ -298,10 +297,9 @@ public class DBUpdateSolver {
         if (meta1 == null)
             throw new EntityObjectRequiredException("Object: " + obj1 + " is not an entity!");
 
-        Optional<RelationMetadata> relationOp = meta1.getRelations().stream().filter(x -> x.getRelationName().equals(relationName)).findFirst();
-        if (relationOp.isEmpty())
+        RelationMetadata rel = meta1.getRelations().get(relationName.toLowerCase());
+        if (rel == null)
             throw new InvalidRelationPathException("Given relation name" + relationName + "doesn't exist in object: " + obj1);
-        RelationMetadata rel = relationOp.get();
 
         //case MANY-TO-ONE and ONE-TO-ONE with containsFK = true -> remove foreign key in obj1 table
         if (rel.getRelationType() == RelationType.MANY_TO_ONE || (rel.getRelationType() == RelationType.ONE_TO_ONE && rel.getMySideKey())) {
