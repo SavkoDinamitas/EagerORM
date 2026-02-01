@@ -103,6 +103,9 @@ public class HrScheme {
             DROP TABLE IF EXISTS countries;
             DROP TABLE IF EXISTS regions;
             DROP TABLE IF EXISTS enum_time_test;
+            DROP TABLE IF EXISTS shipment_items;
+            DROP TABLE IF EXISTS item_codes;
+            DROP TABLE IF EXISTS shipments;
             
             ------------------------------------------------------------
             -- REGIONS
@@ -299,6 +302,37 @@ public class HrScheme {
             INSERT INTO enum_time_test VALUES
             (1, 'NEW', TIMESTAMP '2024-01-10 12:34:56.123', TIME '12:34:56'),
             (2, 'DONE', TIMESTAMP '2024-06-01 08:00:00', TIME '08:00:00');
+            
+            CREATE TABLE shipments (
+              country_code VARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              shipped_at   DATE NOT NULL,
+              PRIMARY KEY (country_code, shipment_no)
+            );
+            
+            CREATE TABLE item_codes (
+              code_prefix VARCHAR(10) NOT NULL,
+              code_number INT NOT NULL,
+              description VARCHAR(200),
+              PRIMARY KEY (code_prefix, code_number)
+            );
+            
+            CREATE TABLE shipment_items (
+              country_code VARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              id      INT NOT NULL,
+              code_prefix  VARCHAR(10) NOT NULL,
+              code_number  INT NOT NULL,
+              quantity     INT NOT NULL,
+            
+              PRIMARY KEY (id),
+            
+              FOREIGN KEY (country_code, shipment_no)
+                REFERENCES shipments(country_code, shipment_no),
+            
+              FOREIGN KEY (code_prefix, code_number)
+                REFERENCES item_codes(code_prefix, code_number)
+            );
             """;
     //@Language("SQL")
     public static final String PSQLScript = """
@@ -314,6 +348,9 @@ public class HrScheme {
             DROP TABLE IF EXISTS regions CASCADE;
             DROP TABLE IF EXISTS enum_time_test;
             DROP TYPE IF EXISTS status_enum;
+            DROP TABLE IF EXISTS shipment_items;
+            DROP TABLE IF EXISTS item_codes;
+            DROP TABLE IF EXISTS shipments;
             
             CREATE TABLE regions (
                 region_id INTEGER PRIMARY KEY,
@@ -470,6 +507,37 @@ public class HrScheme {
             INSERT INTO enum_time_test VALUES
             (1, 'NEW', TIMESTAMP '2024-01-10 12:34:56.123', TIME '12:34:56'),
             (2, 'DONE', TIMESTAMP '2024-06-01 08:00:00', TIME '08:00:00');
+            
+            CREATE TABLE shipments (
+              country_code TEXT NOT NULL,
+              shipment_no  INT  NOT NULL,
+              shipped_at   DATE NOT NULL,
+              PRIMARY KEY (country_code, shipment_no)
+            );
+            
+            CREATE TABLE item_codes (
+              code_prefix TEXT NOT NULL,
+              code_number INT  NOT NULL,
+              description TEXT,
+              PRIMARY KEY (code_prefix, code_number)
+            );
+            
+            CREATE TABLE shipment_items (
+              country_code TEXT NOT NULL,
+              shipment_no  INT  NOT NULL,
+              id      INT  NOT NULL,
+              code_prefix  TEXT NOT NULL,
+              code_number  INT  NOT NULL,
+              quantity     INT  NOT NULL,
+            
+              PRIMARY KEY (id),
+            
+              FOREIGN KEY (country_code, shipment_no)
+                REFERENCES shipments(country_code, shipment_no),
+            
+              FOREIGN KEY (code_prefix, code_number)
+                REFERENCES item_codes(code_prefix, code_number)
+            );
             """;
     //@Language("SQL")
     public static final String MARIADBSCRIPT = """
@@ -484,6 +552,9 @@ public class HrScheme {
             DROP TABLE IF EXISTS countries;
             DROP TABLE IF EXISTS regions;
             DROP TABLE IF EXISTS enum_time_test;
+            DROP TABLE IF EXISTS shipment_items;
+            DROP TABLE IF EXISTS item_codes;
+            DROP TABLE IF EXISTS shipments;
             
             CREATE TABLE regions (
                 region_id INT PRIMARY KEY,
@@ -650,6 +721,39 @@ public class HrScheme {
             INSERT INTO enum_time_test VALUES
             (1, 'NEW', '2024-01-10 12:34:56.123', '12:34:56'),
             (2, 'DONE', '2024-06-01 08:00:00', '08:00:00');
+            
+            CREATE TABLE shipments (
+              country_code VARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              shipped_at   DATE NOT NULL,
+              PRIMARY KEY (country_code, shipment_no)
+            ) ENGINE=InnoDB;
+            
+            CREATE TABLE item_codes (
+              code_prefix VARCHAR(10) NOT NULL,
+              code_number INT NOT NULL,
+              description VARCHAR(200),
+              PRIMARY KEY (code_prefix, code_number)
+            ) ENGINE=InnoDB;
+            
+            CREATE TABLE shipment_items (
+              country_code VARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              id      INT NOT NULL,
+              code_prefix  VARCHAR(10) NOT NULL,
+              code_number  INT NOT NULL,
+              quantity     INT NOT NULL,
+            
+              PRIMARY KEY (id),
+            
+              CONSTRAINT fk_si_shipments
+                FOREIGN KEY (country_code, shipment_no)
+                REFERENCES shipments(country_code, shipment_no),
+            
+              CONSTRAINT fk_si_codes
+                FOREIGN KEY (code_prefix, code_number)
+                REFERENCES item_codes(code_prefix, code_number)
+            ) ENGINE=InnoDB;
             """;
     //@Language("SQL")
     public static final String MSSQLSCRIPT = """
@@ -667,6 +771,9 @@ public class HrScheme {
             IF OBJECT_ID('countries', 'U') IS NOT NULL DROP TABLE countries;
             IF OBJECT_ID('regions', 'U') IS NOT NULL DROP TABLE regions;
             IF OBJECT_ID('enum_time_test', 'U') IS NOT NULL DROP TABLE enum_time_test;
+            IF OBJECT_ID('shipment_items', 'U') IS NOT NULL DROP TABLE shipment_items;
+            IF OBJECT_ID('item_codes', 'U') IS NOT NULL DROP TABLE item_codes;
+            IF OBJECT_ID('shipments', 'U') IS NOT NULL DROP TABLE shipments;
             
             ------------------------------------------------------------
             -- REGIONS
@@ -879,6 +986,40 @@ public class HrScheme {
             INSERT INTO enum_time_test VALUES
             (1, 'NEW', '2024-01-10T12:34:56.123', '12:34:56'),
             (2, 'DONE', '2024-06-01T08:00:00', '08:00:00');
+            
+            CREATE TABLE shipments (
+              country_code NVARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              shipped_at   DATE NOT NULL,
+              CONSTRAINT pk_shipments PRIMARY KEY (country_code, shipment_no)
+            );
+            
+            CREATE TABLE item_codes (
+              code_prefix NVARCHAR(10) NOT NULL,
+              code_number INT NOT NULL,
+              description NVARCHAR(200),
+              CONSTRAINT pk_item_codes PRIMARY KEY (code_prefix, code_number)
+            );
+            
+            CREATE TABLE shipment_items (
+              country_code NVARCHAR(10) NOT NULL,
+              shipment_no  INT NOT NULL,
+              id      INT NOT NULL,
+              code_prefix  NVARCHAR(10) NOT NULL,
+              code_number  INT NOT NULL,
+              quantity     INT NOT NULL,
+            
+              CONSTRAINT pk_shipment_items
+                PRIMARY KEY (id),
+            
+              CONSTRAINT fk_si_shipments
+                FOREIGN KEY (country_code, shipment_no)
+                REFERENCES shipments(country_code, shipment_no),
+            
+              CONSTRAINT fk_si_codes
+                FOREIGN KEY (code_prefix, code_number)
+                REFERENCES item_codes(code_prefix, code_number)
+            );
             """;
     public static void fillMetadataManually() throws NoSuchFieldException {
         //Departments

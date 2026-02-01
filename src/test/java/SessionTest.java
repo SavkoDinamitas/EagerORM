@@ -17,7 +17,6 @@ import static raf.thesis.query.ConditionBuilder.*;
 @SuppressWarnings("JUnitMalformedDeclaration")
 @MultiDBTest
 public class SessionTest {
-    //TODO: composite key detailed tests
     //insert tests
     @Test
     void testSimpleInsert(Session session) throws SQLException {
@@ -319,5 +318,53 @@ public class SessionTest {
         Employee Alexander = new Employee(103, "Alexander", "Hunold", LocalDate.of(2006, 1, 3));
         Employee Bruce = new Employee(104, "Bruce", "Ernst", LocalDate.of(2007, 5, 21));
         assertThat(employees).usingRecursiveComparison().isEqualTo(List.of(Steven, Neena, Lex, Alexander, Bruce));
+    }
+
+    //test composite keys
+    @Test
+    void testCompositeKeyInsertsAndJoins(Session session) throws SQLException {
+        ItemCode item = new ItemCode("lego", 123, "toys");
+        Shipment shipment = new Shipment("srb", 6007, LocalDate.now());
+        ShipmentItem shipmentItem = new ShipmentItem(1, shipment, item, 5);
+        session.insert(item);
+        session.insert(shipment);
+        session.insert(shipmentItem);
+        QueryBuilder qb = QueryBuilder.select(ShipmentItem.class).join("item").join("shipment");
+        List<ShipmentItem> items = session.executeSelect(qb, ShipmentItem.class);
+        assertThat(items.getFirst()).usingRecursiveComparison().isEqualTo(shipmentItem);
+    }
+
+    @Test
+    void testCompositeKeyUpdate(Session session) throws SQLException {
+        ItemCode item = new ItemCode("lego", 123, "toys");
+        session.insert(item);
+        item.setDescription("toys for kids and adults");
+        session.update(item);
+        QueryBuilder qb = QueryBuilder.select(ItemCode.class);
+        List<ItemCode> items = session.executeSelect(qb, ItemCode.class);
+        assertThat(items.getFirst()).usingRecursiveComparison().isEqualTo(item);
+    }
+
+    @Test
+    void testCompositeKeyDelete(Session session) throws SQLException {
+        ItemCode item = new ItemCode("lego", 123, "toys");
+        session.insert(item);
+        session.delete(item);
+        QueryBuilder qb = QueryBuilder.select(ItemCode.class);
+        List<ItemCode> items = session.executeSelect(qb, ItemCode.class);
+        assertEquals(0, items.size());
+    }
+
+    @Test
+    void testCompositeKeyUpsert(Session session) throws SQLException {
+        ItemCode item = new ItemCode("lego", 123, "toys");
+        session.upsert(item);
+        QueryBuilder qb = QueryBuilder.select(ItemCode.class);
+        List<ItemCode> items = session.executeSelect(qb, ItemCode.class);
+        assertThat(items.getFirst()).usingRecursiveComparison().isEqualTo(item);
+        item.setDescription("toys for kids and adults");
+        session.upsert(item);
+        items =  session.executeSelect(qb, ItemCode.class);
+        assertThat(items.getFirst()).usingRecursiveComparison().isEqualTo(item);
     }
 }
