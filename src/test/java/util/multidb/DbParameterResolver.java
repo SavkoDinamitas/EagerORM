@@ -3,11 +3,8 @@ package util.multidb;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import raf.thesis.ConnectionSupplier;
-import raf.thesis.Session;
-
-import java.sql.Connection;
-import java.sql.SQLException;
+import raf.thesis.api.ConnectionSupplier;
+import raf.thesis.api.Session;
 
 class DbParameterResolver implements ParameterResolver {
 

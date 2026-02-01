@@ -1,4 +1,4 @@
-package raf.thesis;
+package raf.thesis.api;
 
 import java.sql.Connection;
 import java.sql.SQLException;

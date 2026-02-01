@@ -1,7 +1,7 @@
 import layering.*;
 import org.junit.jupiter.api.Test;
-import raf.thesis.Session;
-import raf.thesis.query.QueryBuilder;
+import raf.thesis.api.Session;
+import raf.thesis.query.api.QueryBuilder;
 import util.multidb.MultiDBTest;
 
 import java.sql.SQLException;
@@ -12,7 +12,7 @@ import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static raf.thesis.query.ConditionBuilder.*;
+import static raf.thesis.query.api.ConditionBuilder.*;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 @MultiDBTest

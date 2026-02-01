@@ -1,5 +1,7 @@
 package raf.thesis.metadata.annotations;
 
+import raf.thesis.query.api.QueryBuilder;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -13,7 +15,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ManyToMany {
     /**
-     * Relationship names are used in making paths for {@link raf.thesis.query.QueryBuilder} join methods.
+     * Relationship names are used in making paths for {@link QueryBuilder} join methods.
      * Default relationship name is the name of the field.
      */
     String relationName() default "";

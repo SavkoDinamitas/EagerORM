@@ -1,9 +1,10 @@
-package raf.thesis.query;
+package raf.thesis.query.api;
 
 import raf.thesis.metadata.EntityMetadata;
 import raf.thesis.metadata.RelationMetadata;
 import raf.thesis.metadata.RelationType;
 import raf.thesis.metadata.storage.MetadataStorage;
+import raf.thesis.query.PreparedStatementQuery;
 import raf.thesis.query.dialect.Dialect;
 import raf.thesis.query.exceptions.InvalidRelationPathException;
 import raf.thesis.query.tree.*;

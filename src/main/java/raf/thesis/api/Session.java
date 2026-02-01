@@ -1,4 +1,4 @@
-package raf.thesis;
+package raf.thesis.api;
 
 import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
@@ -7,7 +7,7 @@ import raf.thesis.metadata.scan.MetadataScanner;
 import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.DBUpdateSolver;
 import raf.thesis.query.PreparedStatementQuery;
-import raf.thesis.query.QueryBuilder;
+import raf.thesis.query.api.QueryBuilder;
 import raf.thesis.query.dialect.*;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.exceptions.EntityObjectRequiredException;

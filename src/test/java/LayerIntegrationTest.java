@@ -1,18 +1,16 @@
 import layering.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import raf.thesis.ConnectionSupplier;
+import raf.thesis.api.ConnectionSupplier;
 import raf.thesis.mapper.DefaultMapperImplementation;
 import raf.thesis.mapper.RowMapper;
 import raf.thesis.metadata.scan.MetadataScanner;
-import raf.thesis.query.Join;
+import raf.thesis.query.api.Join;
 import raf.thesis.query.PreparedStatementQuery;
-import raf.thesis.query.QueryBuilder;
+import raf.thesis.query.api.QueryBuilder;
 import raf.thesis.query.dialect.*;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.tree.Literal;
-import util.H2HRProvider;
 import util.multidb.MultiDBTest;
 
 import java.sql.*;
@@ -25,7 +23,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static raf.thesis.query.ConditionBuilder.*;
+import static raf.thesis.query.api.ConditionBuilder.*;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 @MultiDBTest

@@ -1,5 +1,6 @@
 package raf.thesis.query.dialect;
 
+import raf.thesis.query.api.QueryBuilder;
 import raf.thesis.query.tree.*;
 
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
  * <p>
  * Encapsulates differences in SQL syntax, feature support,
  * and query generation rules between database vendors.
- * It is used by the {@link raf.thesis.query.QueryBuilder} to produce compatible SQL.
+ * It is used by the {@link QueryBuilder} to produce compatible SQL.
  */
 public interface Dialect {
     String generateSelectClause(SelectNode select, List<Literal> args);

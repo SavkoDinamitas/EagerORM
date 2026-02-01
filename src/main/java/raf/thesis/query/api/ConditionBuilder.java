@@ -1,4 +1,4 @@
-package raf.thesis.query;
+package raf.thesis.query.api;
 
 import lombok.NoArgsConstructor;
 import raf.thesis.query.tree.*;

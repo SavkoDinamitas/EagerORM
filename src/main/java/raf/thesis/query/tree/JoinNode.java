@@ -2,7 +2,7 @@ package raf.thesis.query.tree;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import raf.thesis.query.Join;
+import raf.thesis.query.api.Join;
 import java.util.List;
 
 /**

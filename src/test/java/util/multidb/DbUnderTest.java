@@ -1,6 +1,6 @@
 package util.multidb;
 
-import raf.thesis.ConnectionSupplier;
+import raf.thesis.api.ConnectionSupplier;
 
 public record DbUnderTest(
         String name,

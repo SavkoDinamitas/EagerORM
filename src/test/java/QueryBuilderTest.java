@@ -4,11 +4,11 @@ import discovery.test2.Flight;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import raf.thesis.metadata.scan.MetadataScanner;
-import raf.thesis.query.QueryBuilder;
+import raf.thesis.query.api.QueryBuilder;
 import raf.thesis.query.dialect.ANSISQLDialect;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static raf.thesis.query.ConditionBuilder.*;
+import static raf.thesis.query.api.ConditionBuilder.*;
 
 public class QueryBuilderTest {
     @BeforeAll

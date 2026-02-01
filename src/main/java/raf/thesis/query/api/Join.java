@@ -1,4 +1,4 @@
-package raf.thesis.query;
+package raf.thesis.query.api;
 
 /**
  * Enum for join type specification

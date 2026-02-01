@@ -1,4 +1,4 @@
-package raf.thesis.query;
+package raf.thesis.query.api;
 
 import raf.thesis.metadata.storage.MetadataStorage;
 import raf.thesis.query.dialect.Dialect;

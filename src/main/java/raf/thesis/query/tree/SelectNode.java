@@ -2,14 +2,14 @@ package raf.thesis.query.tree;
 
 import lombok.Getter;
 import lombok.Setter;
-import raf.thesis.query.Join;
+import raf.thesis.query.api.QueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Root of select query AST.
- * Select query AST is used to store {@link raf.thesis.query.QueryBuilder} method calls.
+ * Select query AST is used to store {@link QueryBuilder} method calls.
  * Contains required information for generating {@code SELECT} and {@code FROM} clause.
  */
 @Getter
