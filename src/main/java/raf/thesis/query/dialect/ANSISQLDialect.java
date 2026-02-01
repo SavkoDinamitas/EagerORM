@@ -44,7 +44,7 @@ public class ANSISQLDialect implements Dialect {
     }
 
     private String generateKeyTuple(String tableAlias, List<String> tableColumns){
-        return "(%s)".formatted(tableColumns.stream().map("."::concat).map(quote(tableAlias)::concat).collect(Collectors.joining()));
+        return "(%s)".formatted(tableColumns.stream().map("."::concat).map(quote(tableAlias)::concat).collect(Collectors.joining(", ")));
     }
 
     @Override
