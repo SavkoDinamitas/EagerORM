@@ -1,9 +1,8 @@
 package raf.thesis.query.dialect;
 
-import raf.thesis.query.tree.LimitNode;
-import raf.thesis.query.tree.Literal;
+import raf.thesis.query.internal.tree.LimitNode;
+import raf.thesis.query.internal.tree.Literal;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 

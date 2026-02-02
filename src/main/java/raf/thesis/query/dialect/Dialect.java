@@ -1,7 +1,7 @@
 package raf.thesis.query.dialect;
 
-import raf.thesis.query.api.QueryBuilder;
-import raf.thesis.query.tree.*;
+import raf.thesis.api.QueryBuilder;
+import raf.thesis.query.internal.tree.*;
 
 import java.util.List;
 

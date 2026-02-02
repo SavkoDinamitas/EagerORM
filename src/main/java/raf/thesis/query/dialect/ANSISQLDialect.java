@@ -1,6 +1,6 @@
 package raf.thesis.query.dialect;
 
-import raf.thesis.query.tree.*;
+import raf.thesis.query.internal.tree.*;
 
 import java.util.List;
 import java.util.stream.Collectors;

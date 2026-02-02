@@ -4,12 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.ColumnMetadata;
-import raf.thesis.metadata.EntityMetadata;
+import raf.thesis.metadata.internal.ColumnMetadata;
+import raf.thesis.metadata.internal.EntityMetadata;
 import raf.thesis.metadata.annotations.Entity;
 import raf.thesis.metadata.annotations.Id;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

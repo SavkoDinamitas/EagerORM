@@ -1,14 +1,13 @@
 package discovery.test8;
 
-import raf.thesis.metadata.ColumnMetadata;
-import raf.thesis.metadata.EntityMetadata;
-import raf.thesis.metadata.RelationMetadata;
-import raf.thesis.metadata.RelationType;
+import raf.thesis.metadata.internal.ColumnMetadata;
+import raf.thesis.metadata.internal.EntityMetadata;
+import raf.thesis.metadata.internal.RelationMetadata;
+import raf.thesis.metadata.internal.RelationType;
 import raf.thesis.metadata.annotations.Entity;
 import raf.thesis.metadata.annotations.Id;
 import raf.thesis.metadata.annotations.OneToMany;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

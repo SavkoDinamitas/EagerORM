@@ -6,11 +6,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import raf.thesis.mapper.DefaultMapperImplementation;
-import raf.thesis.mapper.RowMapper;
-import raf.thesis.metadata.ColumnMetadata;
-import raf.thesis.metadata.EntityMetadata;
-import raf.thesis.metadata.storage.MetadataStorage;
+import raf.thesis.mapper.internal.DefaultMapperImplementation;
+import raf.thesis.mapper.internal.RowMapper;
+import raf.thesis.metadata.internal.ColumnMetadata;
+import raf.thesis.metadata.internal.EntityMetadata;
+import raf.thesis.metadata.internal.storage.MetadataStorage;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

@@ -1,11 +1,10 @@
 package discovery.test9;
 
-import raf.thesis.metadata.ColumnMetadata;
-import raf.thesis.metadata.EntityMetadata;
+import raf.thesis.metadata.internal.ColumnMetadata;
+import raf.thesis.metadata.internal.EntityMetadata;
 import raf.thesis.metadata.annotations.Column;
 import raf.thesis.metadata.annotations.PDO;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;

@@ -4,11 +4,11 @@ import domain.hr.Department;
 import domain.hr.Employee;
 import domain.hr.Project;
 import org.intellij.lang.annotations.Language;
-import raf.thesis.metadata.ColumnMetadata;
-import raf.thesis.metadata.EntityMetadata;
-import raf.thesis.metadata.RelationMetadata;
-import raf.thesis.metadata.RelationType;
-import raf.thesis.metadata.storage.MetadataStorage;
+import raf.thesis.metadata.internal.ColumnMetadata;
+import raf.thesis.metadata.internal.EntityMetadata;
+import raf.thesis.metadata.internal.RelationMetadata;
+import raf.thesis.metadata.internal.RelationType;
+import raf.thesis.metadata.internal.storage.MetadataStorage;
 
 import java.util.HashMap;
 import java.util.List;

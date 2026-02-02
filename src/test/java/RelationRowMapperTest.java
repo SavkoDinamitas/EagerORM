@@ -1,22 +1,18 @@
-import domain.User;
 import domain.hr.Department;
 import domain.hr.Employee;
 import domain.hr.Project;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import raf.thesis.mapper.DefaultMapperImplementation;
-import raf.thesis.mapper.RowMapper;
+import raf.thesis.mapper.internal.DefaultMapperImplementation;
+import raf.thesis.mapper.internal.RowMapper;
 import util.H2HRProvider;
 import util.HrScheme;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -1,7 +1,7 @@
 package raf.thesis.query.dialect;
 
-import raf.thesis.query.tree.JoinNode;
-import raf.thesis.query.tree.Literal;
+import raf.thesis.query.internal.tree.JoinNode;
+import raf.thesis.query.internal.tree.Literal;
 
 import java.util.List;
 import java.util.stream.Collectors;

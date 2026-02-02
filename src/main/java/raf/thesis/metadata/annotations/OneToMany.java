@@ -1,6 +1,6 @@
 package raf.thesis.metadata.annotations;
 
-import raf.thesis.query.api.QueryBuilder;
+import raf.thesis.api.QueryBuilder;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
