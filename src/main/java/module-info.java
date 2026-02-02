@@ -1,11 +1,10 @@
 module EagerORM {
     requires java.sql;
     requires static lombok;
-    requires org.apache.commons.beanutils;
     requires org.reflections;
     requires org.slf4j;
+    requires org.apache.commons.beanutils2;
     exports raf.thesis.api;
-    exports raf.thesis.query.api;
     exports raf.thesis.query.dialect;
     exports raf.thesis.query.transaction;
     exports raf.thesis.metadata.annotations;
