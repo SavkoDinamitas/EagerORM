@@ -1,24 +1,24 @@
 package raf.thesis.api;
 
-import raf.thesis.mapper.DefaultMapperImplementation;
-import raf.thesis.mapper.RowMapper;
-import raf.thesis.metadata.EntityMetadata;
-import raf.thesis.metadata.scan.MetadataScanner;
-import raf.thesis.metadata.storage.MetadataStorage;
-import raf.thesis.query.DBUpdateSolver;
-import raf.thesis.query.PreparedStatementQuery;
-import raf.thesis.query.api.QueryBuilder;
+import raf.thesis.mapper.internal.DefaultMapperImplementation;
+import raf.thesis.mapper.internal.RowMapper;
+import raf.thesis.metadata.internal.EntityMetadata;
+import raf.thesis.metadata.internal.scan.MetadataScanner;
+import raf.thesis.metadata.internal.storage.MetadataStorage;
+import raf.thesis.query.internal.DBUpdateSolver;
+import raf.thesis.query.internal.PreparedStatementQuery;
 import raf.thesis.query.dialect.*;
 import raf.thesis.query.exceptions.ConnectionUnavailableException;
 import raf.thesis.query.exceptions.EntityObjectRequiredException;
 import raf.thesis.query.transaction.SQLTransactionBody;
 import raf.thesis.query.transaction.SQLValuedTransactionBody;
-import raf.thesis.query.tree.Literal;
+import raf.thesis.query.internal.tree.Literal;
 
 import java.sql.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Central entry point for executing queries and persistence operations.
@@ -42,12 +42,12 @@ public class Session {
      * connection metadata and scans the given packages for entity metadata.
      *
      * @param connectionSupplier supplier of database connections
-     * @param scanPackages       packages to scan for entity metadata, if not given
-     *                           scans whole classpath
+     * @param scanPackage       package to scan for entity metadata
+     * @param scanPackages other packages to scan for entity metadata
      */
-    public Session(ConnectionSupplier connectionSupplier, String... scanPackages) {
+    public Session(ConnectionSupplier connectionSupplier, String scanPackage, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
-        metadataScanner.discoverMetadata(scanPackages);
+        metadataScanner.discoverMetadata(Stream.concat(Stream.of(scanPackage), Stream.of(scanPackages)).toArray(String[]::new));
         //detect which Dialect to use based on connection db
         dialect = getDialect();
         DBUpdateSolver = new DBUpdateSolver(dialect);
@@ -59,12 +59,12 @@ public class Session {
      *
      * @param connectionSupplier supplier of database connections
      * @param dialect            SQL dialect to use
-     * @param scanPackages       packages to scan for entity metadata, if not given
-     *                           scans whole classpath
+     * @param scanPackage       package to scan for entity metadata
+     * @param scanPackages other packages to scan for entity metadata
      */
-    public Session(ConnectionSupplier connectionSupplier, Dialect dialect, String... scanPackages) {
+    public Session(ConnectionSupplier connectionSupplier, Dialect dialect, String scanPackage, String... scanPackages) {
         this.connectionSupplier = connectionSupplier;
-        metadataScanner.discoverMetadata(scanPackages);
+        metadataScanner.discoverMetadata(Stream.concat(Stream.of(scanPackage), Stream.of(scanPackages)).toArray(String[]::new));
         //detect which Dialect to use based on connection db
         this.dialect = dialect;
         DBUpdateSolver = new DBUpdateSolver(dialect);
