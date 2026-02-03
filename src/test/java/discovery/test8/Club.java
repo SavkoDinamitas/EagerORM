@@ -18,13 +18,13 @@
 
 package discovery.test8;
 
-import raf.thesis.metadata.internal.ColumnMetadata;
-import raf.thesis.metadata.internal.EntityMetadata;
-import raf.thesis.metadata.internal.RelationMetadata;
-import raf.thesis.metadata.internal.RelationType;
-import raf.thesis.metadata.annotations.Entity;
-import raf.thesis.metadata.annotations.Id;
-import raf.thesis.metadata.annotations.OneToMany;
+import io.github.savkodinamitas.metadata.internal.ColumnMetadata;
+import io.github.savkodinamitas.metadata.internal.EntityMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationType;
+import io.github.savkodinamitas.metadata.annotations.Entity;
+import io.github.savkodinamitas.metadata.annotations.Id;
+import io.github.savkodinamitas.metadata.annotations.OneToMany;
 
 import java.util.HashMap;
 import java.util.List;

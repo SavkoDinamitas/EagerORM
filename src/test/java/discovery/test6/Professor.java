@@ -18,9 +18,9 @@
 
 package discovery.test6;
 
-import raf.thesis.metadata.annotations.Entity;
-import raf.thesis.metadata.annotations.Id;
-import raf.thesis.metadata.annotations.OneToMany;
+import io.github.savkodinamitas.metadata.annotations.Entity;
+import io.github.savkodinamitas.metadata.annotations.Id;
+import io.github.savkodinamitas.metadata.annotations.OneToMany;
 
 @Entity(tableName = "professors")
 public class Professor {

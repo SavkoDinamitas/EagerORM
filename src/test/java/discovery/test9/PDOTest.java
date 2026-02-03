@@ -18,10 +18,10 @@
 
 package discovery.test9;
 
-import raf.thesis.metadata.internal.ColumnMetadata;
-import raf.thesis.metadata.internal.EntityMetadata;
-import raf.thesis.metadata.annotations.Column;
-import raf.thesis.metadata.annotations.PDO;
+import io.github.savkodinamitas.metadata.internal.ColumnMetadata;
+import io.github.savkodinamitas.metadata.internal.EntityMetadata;
+import io.github.savkodinamitas.metadata.annotations.Column;
+import io.github.savkodinamitas.metadata.annotations.PDO;
 
 import java.util.ArrayList;
 import java.util.HashMap;

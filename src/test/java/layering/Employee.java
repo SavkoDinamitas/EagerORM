@@ -18,11 +18,11 @@
 
 package layering;
 
+import io.github.savkodinamitas.metadata.annotations.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.annotations.*;
 
 import java.time.LocalDate;
 import java.util.List;

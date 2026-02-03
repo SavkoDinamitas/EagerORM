@@ -18,8 +18,8 @@
 
 import layering.*;
 import org.junit.jupiter.api.Test;
-import raf.thesis.api.Session;
-import raf.thesis.api.QueryBuilder;
+import io.github.savkodinamitas.api.Session;
+import io.github.savkodinamitas.api.QueryBuilder;
 import util.multidb.MultiDBTest;
 
 import java.sql.SQLException;
@@ -28,9 +28,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+import static io.github.savkodinamitas.api.ConditionBuilder.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static raf.thesis.api.ConditionBuilder.*;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 @MultiDBTest

@@ -22,9 +22,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.annotations.Entity;
-import raf.thesis.metadata.annotations.Id;
-import raf.thesis.metadata.annotations.ManyToOne;
+import io.github.savkodinamitas.metadata.annotations.Entity;
+import io.github.savkodinamitas.metadata.annotations.Id;
+import io.github.savkodinamitas.metadata.annotations.ManyToOne;
 
 @Entity(tableName = "shipment_items")
 @NoArgsConstructor@AllArgsConstructor@Getter@Setter

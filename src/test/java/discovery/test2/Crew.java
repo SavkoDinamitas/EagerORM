@@ -18,15 +18,15 @@
 
 package discovery.test2;
 
+import io.github.savkodinamitas.metadata.annotations.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.internal.ColumnMetadata;
-import raf.thesis.metadata.internal.EntityMetadata;
-import raf.thesis.metadata.internal.RelationMetadata;
-import raf.thesis.metadata.internal.RelationType;
-import raf.thesis.metadata.annotations.*;
+import io.github.savkodinamitas.metadata.internal.ColumnMetadata;
+import io.github.savkodinamitas.metadata.internal.EntityMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationType;
 
 import java.util.HashMap;
 import java.util.List;

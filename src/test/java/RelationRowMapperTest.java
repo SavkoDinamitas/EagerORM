@@ -22,8 +22,8 @@ import domain.hr.Project;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import raf.thesis.mapper.internal.DefaultMapperImplementation;
-import raf.thesis.mapper.internal.RowMapper;
+import io.github.savkodinamitas.mapper.internal.DefaultMapperImplementation;
+import io.github.savkodinamitas.mapper.internal.RowMapper;
 import util.H2HRProvider;
 import util.HrScheme;
 

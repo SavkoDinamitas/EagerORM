@@ -21,8 +21,8 @@ package util.multidb;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import raf.thesis.api.ConnectionSupplier;
-import raf.thesis.api.Session;
+import io.github.savkodinamitas.api.ConnectionSupplier;
+import io.github.savkodinamitas.api.Session;
 
 class DbParameterResolver implements ParameterResolver {
 

@@ -22,7 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.annotations.PDO;
+import io.github.savkodinamitas.metadata.annotations.PDO;
 
 @NoArgsConstructor@AllArgsConstructor
 @Getter@Setter

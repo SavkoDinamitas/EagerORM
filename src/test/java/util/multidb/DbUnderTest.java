@@ -18,7 +18,7 @@
 
 package util.multidb;
 
-import raf.thesis.api.ConnectionSupplier;
+import io.github.savkodinamitas.api.ConnectionSupplier;
 
 public record DbUnderTest(
         String name,

@@ -22,8 +22,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import raf.thesis.metadata.annotations.Entity;
-import raf.thesis.metadata.annotations.Id;
+import io.github.savkodinamitas.metadata.annotations.Entity;
+import io.github.savkodinamitas.metadata.annotations.Id;
 
 import java.time.LocalDate;
 

@@ -24,11 +24,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import raf.thesis.mapper.internal.DefaultMapperImplementation;
-import raf.thesis.mapper.internal.RowMapper;
-import raf.thesis.metadata.internal.ColumnMetadata;
-import raf.thesis.metadata.internal.EntityMetadata;
-import raf.thesis.metadata.internal.storage.MetadataStorage;
+import io.github.savkodinamitas.mapper.internal.DefaultMapperImplementation;
+import io.github.savkodinamitas.mapper.internal.RowMapper;
+import io.github.savkodinamitas.metadata.internal.ColumnMetadata;
+import io.github.savkodinamitas.metadata.internal.EntityMetadata;
+import io.github.savkodinamitas.metadata.internal.storage.MetadataStorage;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

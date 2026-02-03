@@ -1,0 +1,459 @@
+/*
+ * EagerORM - A predictable object-relation mapper
+ * Copyright (C) 2026  Dimitrije Andžić <dimitrije.andzic@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.github.savkodinamitas.query.internal;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils2.PropertyUtils;
+import io.github.savkodinamitas.metadata.internal.ColumnMetadata;
+import io.github.savkodinamitas.metadata.internal.EntityMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationMetadata;
+import io.github.savkodinamitas.metadata.internal.RelationType;
+import io.github.savkodinamitas.metadata.internal.storage.MetadataStorage;
+import io.github.savkodinamitas.query.dialect.Dialect;
+import io.github.savkodinamitas.query.exceptions.EntityObjectRequiredException;
+import io.github.savkodinamitas.query.exceptions.IdInRelatedObjectsCantBeNullException;
+import io.github.savkodinamitas.query.exceptions.InvalidRelationPathException;
+import io.github.savkodinamitas.query.exceptions.MissingIdException;
+import io.github.savkodinamitas.query.internal.tree.Literal;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+
+@AllArgsConstructor
+@Slf4j
+public class DBUpdateSolver {
+    public Dialect dialect;
+
+    /**
+     * Generates INSERT query for given object including the relations
+     * that have the foreign key in the table of the given object.
+     * As there is generated primary key support,
+     * other queries for relation solving must be made after this first insert.
+     * If PK is marked as generated, it will always be skipped in query generation.
+     * */
+    public PreparedStatementQuery generateInsert(Object obj) {
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
+        //required arguments to generate query
+        List<String> columnNames = new ArrayList<>();
+        List<Literal> columnValues = new ArrayList<>();
+
+        //helper map for detecting generated id-s
+        Map<Field, Boolean> generated = new HashMap<>();
+        for (int i = 0; i < meta.getIdFields().size(); i++) {
+            generated.put(meta.getIdFields().get(i), meta.getGeneratedId().get(i));
+        }
+        //add all columns in object
+        for (var col : meta.getColumns().values()) {
+            //if key is generated, skip it in insert
+            if (generated.containsKey(col.getField()) && generated.get(col.getField()))
+                continue;
+            columnNames.add(col.getColumnName());
+            columnValues.add(makeLiteral(col.getField(), obj));
+        }
+
+        //solve relations
+        for (var relation : meta.getRelations().values()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
+            if (relatedObject == null)
+                continue;
+
+            //if foreign key is in this object, add columns to insert query
+            if (relation.getRelationType() == RelationType.MANY_TO_ONE || (relation.getRelationType() == RelationType.ONE_TO_ONE && relation.getMySideKey())) {
+                columnNames.addAll(relation.getForeignKeyNames());
+                EntityMetadata relationEntity = MetadataStorage.get(relatedObject.getClass());
+                getKeyValues(relationEntity, relatedObject, columnValues);
+            }
+            //in other cases, as there is generated PK support, that generated key is needed for relation update
+        }
+        String query = dialect instanceof Dialect.UsesInsertReturning d ? d.generateInsertQuery(columnNames, meta.getTableName(), extractKeys(meta)) : dialect.generateInsertQuery(columnNames, meta.getTableName());
+        PreparedStatementQuery result = new PreparedStatementQuery(query, columnValues);
+        log.debug("Generated INSERT query:\n{}", result);
+        return result;
+    }
+
+    /**
+     * Generates UPDATE queries for all obj relations which foreign keys are not inside obj.
+     * Doesn't include MANY_TO_MANY relations.
+     */
+    public List<PreparedStatementQuery> generateRelationshipUpdateQueries(Object obj) {
+        List<PreparedStatementQuery> queries = new ArrayList<>();
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
+
+        //for each ONE_TO_MANY relation and ONE_TO_ONE with containsFK == false, make the update query
+        for(var relation : meta.getRelations().values()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
+            //if relationship is empty, continue
+            if (relatedObject == null)
+                continue;
+            //ONE_TO_MANY case, connect all elements in the list with obj
+            if(relation.getRelationType() == RelationType.ONE_TO_MANY) {
+                if(relatedObject instanceof List<?> relations) {
+                    for (Object element : relations) {
+                        queries.add(connect(obj, element, relation.getRelationName()));
+                    }
+                }
+                else
+                    throw new IllegalStateException("ONE_TO_MANY field must be a list");
+            }
+            //ONE_TO_ONE case, connect one element with obj
+            if(relation.getRelationType() == RelationType.ONE_TO_ONE && !relation.getMySideKey()){
+                queries.add(connect(obj, relatedObject, relation.getRelationName()));
+            }
+        }
+        log.debug("Generated UPDATE queries:\n{}", queries);
+        return queries;
+    }
+
+    /**
+     * Generates UPSERT queries for all MANY_TO_MANY relations in the given object.
+     * Object must have the primary key inside.
+     * */
+    public List<PreparedStatementQuery> generateManyToManyInserts(Object obj) {
+        List<PreparedStatementQuery> queries = new ArrayList<>();
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + obj + " is not an entity");
+
+        for (var relation : meta.getRelations().values()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), obj);
+            if (relatedObject == null)
+                continue;
+
+            if (relation.getRelationType() == RelationType.MANY_TO_MANY) {
+                if (!(relatedObject instanceof List<?> relatedObjectList))
+                    throw new IllegalStateException("Scanner should have already prevented this");
+                List<String> cols = new ArrayList<>();
+                cols.addAll(relation.getMyJoinedTableFks());
+                cols.addAll(relation.getForeignKeyNames());
+                for (var instance : relatedObjectList) {
+                    List<Literal> colValues = new ArrayList<>();
+                    //fill values for my entity, use the object got from returning keyword in original insert to cover generated id case
+                    getKeyValues(meta, obj, colValues);
+
+                    //fill values for related entity
+                    EntityMetadata relationEntity = MetadataStorage.get(instance.getClass());
+                    getKeyValues(relationEntity, instance, colValues);
+
+                    queries.add(new PreparedStatementQuery(dialect.generateUpsertQuery(cols, relation.getJoinedTableName(), cols), colValues));
+                }
+            }
+        }
+        log.debug("Generated INSERT queries:\n{}", queries);
+        return queries;
+    }
+
+    /**
+     * Generates UPDATE query for the object in DB table with the same PK.
+     * If ignoreNulls is true, NULL valued fields are omitted in SET clause.
+     */
+    public PreparedStatementQuery updateObject(Object object, boolean ignoreNulls) {
+        EntityMetadata meta = MetadataStorage.get(object.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + object + " is not an entity!");
+        List<String> columnNames = new ArrayList<>();
+        List<String> keyColumnNames = new ArrayList<>();
+        List<Literal> columnValues = new ArrayList<>();
+        List<Literal> keyColumnValues = new ArrayList<>();
+
+        for (var col : meta.getColumns().values()) {
+            //PK field
+            if (meta.getIdFields().contains(col.getField())) {
+                extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, object);
+            }
+            //normal column
+            else {
+                columnNames.add(col.getColumnName());
+                Literal value = makeLiteral(col.getField(), object);
+                if (value instanceof Literal.NullCnst && ignoreNulls)
+                    columnNames.removeLast();
+                else
+                    columnValues.add(value);
+            }
+        }
+        //key columns should be at the end
+        columnValues.addAll(keyColumnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
+        log.debug("Generated UPDATE query:\n{}", result);
+        return result;
+    }
+
+    /**
+     * Generates MERGE query for the given object. If object is not present in DB, works the same as INSERT,
+     * if it is, updates all direct fields and relations. Ignores NULL-valued relations -> old relations content
+     * stays the same.
+     * */
+    public List<PreparedStatementQuery> upsertObject(Object object){
+        EntityMetadata meta = MetadataStorage.get(object.getClass());
+        if(meta == null)
+            throw new EntityObjectRequiredException("Object: " + object + " is not an entity!");
+        List<String> keyColumnNames = extractKeys(meta);
+        List<String> columnNames = new ArrayList<>();
+        List<Literal> columnValues = new ArrayList<>();
+
+        //add all columns in object
+        for (var col : meta.getColumns().values()) {
+            columnNames.add(col.getColumnName());
+            columnValues.add(makeLiteral(col.getField(), object));
+        }
+
+        //solve relations
+        for (var relation : meta.getRelations().values()) {
+            Object relatedObject = extractFieldValue(relation.getForeignField(), object);
+            if (relatedObject == null)
+                continue;
+
+            //if foreign key is in this object, add columns to insert query
+            if (relation.getRelationType() == RelationType.MANY_TO_ONE || (relation.getRelationType() == RelationType.ONE_TO_ONE && relation.getMySideKey())) {
+                columnNames.addAll(relation.getForeignKeyNames());
+                EntityMetadata relationEntity = MetadataStorage.get(relatedObject.getClass());
+                getKeyValues(relationEntity, relatedObject, columnValues);
+            }
+            //else, make the connection prepared statements at the end
+        }
+        String query = dialect.generateUpsertQuery(columnNames, meta.getTableName(), keyColumnNames);
+        List<PreparedStatementQuery> queries = new ArrayList<>();
+        queries.add(new PreparedStatementQuery(query, columnValues));
+        queries.addAll(generateRelationshipUpdateQueries(object));
+        queries.addAll(generateManyToManyInserts(object));
+        log.debug("Generated MERGE queries:\n{}", queries);
+        return queries;
+    }
+
+    /**
+     * Generates DELETE query for the given object using its PK.
+     */
+    public PreparedStatementQuery deleteObject(Object obj) {
+        EntityMetadata meta = MetadataStorage.get(obj.getClass());
+        if (meta == null)
+            throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
+        List<String> keyColumnNames = new ArrayList<>();
+        List<Literal> keyColumnValues = new ArrayList<>();
+
+        for (var col : meta.getColumns().values()) {
+            //PK field
+            if (meta.getIdFields().contains(col.getField())) {
+                extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, obj);
+            }
+        }
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumnNames, meta.getTableName()), keyColumnValues);
+        log.debug("Generated DELETE query:\n{}", result);
+        return result;
+    }
+
+    /**
+     * Creates UPSERT (for MANY_TO_MANY relations) or UPDATE (for other relation types) query
+     * to connect two objects depending on the relation type. Supports all relationship types.
+     */
+    public PreparedStatementQuery connect(Object obj1, Object obj2, String relationName) {
+        EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
+        EntityMetadata meta2 = MetadataStorage.get(obj2.getClass());
+        if (meta1 == null)
+            throw new EntityObjectRequiredException("Object: " + obj1 + " is not an entity!");
+        if (meta2 == null)
+            throw new EntityObjectRequiredException("Object: " + obj2 + " is not an entity!");
+
+        RelationMetadata rel = meta1.getRelations().get(relationName.toLowerCase());
+        if (rel == null)
+            throw new InvalidRelationPathException("Given relation name doesn't exist in object: " + obj1);
+
+        //case MANY-TO-ONE and ONE-TO-ONE with containsFK = true -> update foreign key in obj1 table
+        if (rel.getRelationType() == RelationType.MANY_TO_ONE || (rel.getRelationType() == RelationType.ONE_TO_ONE && rel.getMySideKey())) {
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta1));
+            getKeyValues(meta2, obj2, columnValues);
+            getKeyValues(meta1, obj1, columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated connect UPDATE query:\n{}", result);
+            return result;
+        }
+        //case ONE-TO-MANY or ONE-TO-ONE with containsFK = false -> update foreign key in obj2 table
+        if (rel.getRelationType() == RelationType.ONE_TO_MANY || rel.getRelationType() == RelationType.ONE_TO_ONE) {
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta2));
+            getKeyValues(meta1, obj1, columnValues);
+            getKeyValues(meta2, obj2, columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated connect UPDATE query:\n{}", result);
+            return result;
+        }
+        //case MANY-TO-MANY -> upsert both keys in joined table
+        List<String> columnNames = new ArrayList<>(rel.getMyJoinedTableFks());
+        columnNames.addAll(rel.getForeignKeyNames());
+        List<Literal> columnValues = new ArrayList<>();
+        getKeyValues(meta1, obj1, columnValues);
+        getKeyValues(meta2, obj2, columnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpsertQuery(columnNames, rel.getJoinedTableName(), columnNames), columnValues);
+        log.debug("Generated connect UPSERT query:\n{}", result);
+        return result;
+    }
+
+    /**
+     * Generates UPDATE od DELETE query to disconnect two given objects.
+     * Disconnects two objects by placing NULL value in foreign key column,
+     * or in case of MANY_TO_MANY relations, deletes the specific row in the joined table.
+     */
+    public PreparedStatementQuery disconnect(Object obj1, Object obj2, String relationName) {
+        EntityMetadata meta1 = MetadataStorage.get(obj1.getClass());
+        if (meta1 == null)
+            throw new EntityObjectRequiredException("Object: " + obj1 + " is not an entity!");
+
+        RelationMetadata rel = meta1.getRelations().get(relationName.toLowerCase());
+        if (rel == null)
+            throw new InvalidRelationPathException("Given relation name" + relationName + "doesn't exist in object: " + obj1);
+
+        //case MANY-TO-ONE and ONE-TO-ONE with containsFK = true -> remove foreign key in obj1 table
+        if (rel.getRelationType() == RelationType.MANY_TO_ONE || (rel.getRelationType() == RelationType.ONE_TO_ONE && rel.getMySideKey())) {
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta1));
+            //fill set values to null
+            for (int i = 0; i < columnNames.size(); i++) {
+                columnValues.add(new Literal.NullCnst());
+            }
+            getKeyValues(meta1, obj1, columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated disconnect UPDATE query:\n{}", result);
+            return result;
+        }
+        //case ONE-TO-MANY or ONT_TO_ONE with containsFK = false -> update foreign key in obj2 table
+        if (rel.getRelationType() == RelationType.ONE_TO_MANY || rel.getRelationType() == RelationType.ONE_TO_ONE) {
+            if (obj2 == null) {
+                throw new NullPointerException("Both objects in ONE_TO_MANY relation must be given!");
+            }
+            EntityMetadata meta2 = MetadataStorage.get(obj2.getClass());
+            //joined values, first ones in SET clause than ones in WHERE clause
+            List<Literal> columnValues = new ArrayList<>();
+            //columns to put in SET clause of UPDATE query
+            List<String> columnNames = new ArrayList<>(rel.getForeignKeyNames());
+            //columns to put in WHERE clause of UPDATE query
+            List<String> columnKeyNames = new ArrayList<>(extractKeys(meta2));
+            //fill set values to null
+            for (int i = 0; i < columnNames.size(); i++) {
+                columnValues.add(new Literal.NullCnst());
+            }
+            getKeyValues(meta2, obj2, columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated disconnect UPDATE query:\n{}", result);
+            return result;
+        }
+        //case MANY-TO-MANY -> add both keys to DELETE query
+        if (obj2 == null) {
+            throw new NullPointerException("Both objects in MANY_TO_MANY relation must be given!");
+        }
+        EntityMetadata meta2 = MetadataStorage.get(obj2.getClass());
+        List<String> keyColumns = new ArrayList<>(rel.getMyJoinedTableFks());
+        keyColumns.addAll(rel.getForeignKeyNames());
+        List<Literal> keyColValues = new ArrayList<>();
+        getKeyValues(meta1, obj1, keyColValues);
+        getKeyValues(meta2, obj2, keyColValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumns, rel.getJoinedTableName()), keyColValues);
+        log.debug("Generated disconnect DELETE query:\n{}", result);
+        return result;
+    }
+
+    //returns the list of columns that are primary keys in given entity
+    private List<String> extractKeys(EntityMetadata metadata) {
+        List<String> keys = new ArrayList<>();
+        for (var column : metadata.getColumns().values()) {
+            if (metadata.getIdFields().contains(column.getField())) {
+                keys.add(column.getColumnName());
+            }
+        }
+        return keys;
+    }
+
+    /** Helper function for extracting column name and value into their specific lists for constructing the prepared statements */
+    private void extractColumnNameAndValue(List<String> columnNames, List<Literal> columnValues, ColumnMetadata col, Object instance) {
+        columnNames.add(col.getColumnName());
+        Literal value = makeLiteral(col.getField(), instance);
+        if (value instanceof Literal.NullCnst)
+            throw new MissingIdException("Given object: " + instance + "has no set primary keys!");
+        columnValues.add(value);
+    }
+
+    /** Helper function to extract the values of primary keys of some object */
+    private void getKeyValues(EntityMetadata meta, Object obj, List<Literal> columnValues) {
+        for (var key : meta.getIdFields()) {
+            Object value = extractFieldValue(key, obj);
+            if (value == null)
+                throw new IdInRelatedObjectsCantBeNullException("Id fields in related object: " + obj.getClass().getName() + " is not set!");
+            columnValues.add(makeLiteral(value));
+        }
+    }
+
+    /** Helper function for extracting the value of the field*/
+    private Object extractFieldValue(Field field, Object instance) {
+        try {
+            return PropertyUtils.getProperty(instance, field.getName());
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Helper function to make Literal expression of the field value */
+    private Literal makeLiteral(Field field, Object instance) {
+        return makeLiteral(extractFieldValue(field, instance));
+    }
+
+    /** Helper function to make Literal expression from given value */
+    private Literal makeLiteral(Object obj) {
+        return switch (obj) {
+            case null -> new Literal.NullCnst();
+
+            case Double d -> new Literal.DoubleCnst(d);
+            case Float f -> new Literal.DoubleCnst(f.doubleValue());
+
+            case Long l -> new Literal.LongCnst(l);
+            case Integer i -> new Literal.LongCnst(i.longValue());
+            case Short s -> new Literal.LongCnst(s.longValue());
+            case Byte b -> new Literal.LongCnst(b.longValue());
+
+            case Boolean bool -> new Literal.BoolCnst(bool);
+
+            case String str -> new Literal.StringCnst(str);
+            case Enum<?> e -> new Literal.StringCnst(e.name());
+
+            case LocalDate date -> new Literal.DateCnst(date);
+            case LocalDateTime dateTime -> new Literal.DateTimeCnst(dateTime);
+            case LocalTime time -> new Literal.TimeCnst(time);
+
+            default -> throw new IllegalArgumentException("Unsupported literal type: " + obj.getClass());
+        };
+    }
+}
