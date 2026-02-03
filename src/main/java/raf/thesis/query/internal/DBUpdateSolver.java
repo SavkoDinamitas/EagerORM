@@ -1,6 +1,7 @@
 package raf.thesis.query.internal;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils2.PropertyUtils;
 import raf.thesis.metadata.internal.ColumnMetadata;
 import raf.thesis.metadata.internal.EntityMetadata;
@@ -22,6 +23,7 @@ import java.time.LocalTime;
 import java.util.*;
 
 @AllArgsConstructor
+@Slf4j
 public class DBUpdateSolver {
     public Dialect dialect;
 
@@ -71,7 +73,9 @@ public class DBUpdateSolver {
             //in other cases, as there is generated PK support, that generated key is needed for relation update
         }
         String query = dialect instanceof Dialect.UsesInsertReturning d ? d.generateInsertQuery(columnNames, meta.getTableName(), extractKeys(meta)) : dialect.generateInsertQuery(columnNames, meta.getTableName());
-        return new PreparedStatementQuery(query, columnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(query, columnValues);
+        log.debug("Generated INSERT query:\n{}", result);
+        return result;
     }
 
     /**
@@ -105,6 +109,7 @@ public class DBUpdateSolver {
                 queries.add(connect(obj, relatedObject, relation.getRelationName()));
             }
         }
+        log.debug("Generated UPDATE queries:\n{}", queries);
         return queries;
     }
 
@@ -142,6 +147,7 @@ public class DBUpdateSolver {
                 }
             }
         }
+        log.debug("Generated INSERT queries:\n{}", queries);
         return queries;
     }
 
@@ -175,7 +181,9 @@ public class DBUpdateSolver {
         }
         //key columns should be at the end
         columnValues.addAll(keyColumnValues);
-        return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta.getTableName(), keyColumnNames), columnValues);
+        log.debug("Generated UPDATE query:\n{}", result);
+        return result;
     }
 
     /**
@@ -216,6 +224,7 @@ public class DBUpdateSolver {
         queries.add(new PreparedStatementQuery(query, columnValues));
         queries.addAll(generateRelationshipUpdateQueries(object));
         queries.addAll(generateManyToManyInserts(object));
+        log.debug("Generated MERGE queries:\n{}", queries);
         return queries;
     }
 
@@ -235,7 +244,9 @@ public class DBUpdateSolver {
                 extractColumnNameAndValue(keyColumnNames, keyColumnValues, col, obj);
             }
         }
-        return new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumnNames, meta.getTableName()), keyColumnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumnNames, meta.getTableName()), keyColumnValues);
+        log.debug("Generated DELETE query:\n{}", result);
+        return result;
     }
 
     /**
@@ -264,7 +275,9 @@ public class DBUpdateSolver {
             List<String> columnKeyNames = new ArrayList<>(extractKeys(meta1));
             getKeyValues(meta2, obj2, columnValues);
             getKeyValues(meta1, obj1, columnValues);
-            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated connect UPDATE query:\n{}", result);
+            return result;
         }
         //case ONE-TO-MANY or ONE-TO-ONE with containsFK = false -> update foreign key in obj2 table
         if (rel.getRelationType() == RelationType.ONE_TO_MANY || rel.getRelationType() == RelationType.ONE_TO_ONE) {
@@ -276,7 +289,9 @@ public class DBUpdateSolver {
             List<String> columnKeyNames = new ArrayList<>(extractKeys(meta2));
             getKeyValues(meta1, obj1, columnValues);
             getKeyValues(meta2, obj2, columnValues);
-            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated connect UPDATE query:\n{}", result);
+            return result;
         }
         //case MANY-TO-MANY -> upsert both keys in joined table
         List<String> columnNames = new ArrayList<>(rel.getMyJoinedTableFks());
@@ -284,7 +299,9 @@ public class DBUpdateSolver {
         List<Literal> columnValues = new ArrayList<>();
         getKeyValues(meta1, obj1, columnValues);
         getKeyValues(meta2, obj2, columnValues);
-        return new PreparedStatementQuery(dialect.generateUpsertQuery(columnNames, rel.getJoinedTableName(), columnNames), columnValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpsertQuery(columnNames, rel.getJoinedTableName(), columnNames), columnValues);
+        log.debug("Generated connect UPSERT query:\n{}", result);
+        return result;
     }
 
     /**
@@ -314,7 +331,9 @@ public class DBUpdateSolver {
                 columnValues.add(new Literal.NullCnst());
             }
             getKeyValues(meta1, obj1, columnValues);
-            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta1.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated disconnect UPDATE query:\n{}", result);
+            return result;
         }
         //case ONE-TO-MANY or ONT_TO_ONE with containsFK = false -> update foreign key in obj2 table
         if (rel.getRelationType() == RelationType.ONE_TO_MANY || rel.getRelationType() == RelationType.ONE_TO_ONE) {
@@ -333,7 +352,9 @@ public class DBUpdateSolver {
                 columnValues.add(new Literal.NullCnst());
             }
             getKeyValues(meta2, obj2, columnValues);
-            return new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateUpdateQuery(columnNames, meta2.getTableName(), columnKeyNames), columnValues);
+            log.debug("Generated disconnect UPDATE query:\n{}", result);
+            return result;
         }
         //case MANY-TO-MANY -> add both keys to DELETE query
         if (obj2 == null) {
@@ -345,7 +366,9 @@ public class DBUpdateSolver {
         List<Literal> keyColValues = new ArrayList<>();
         getKeyValues(meta1, obj1, keyColValues);
         getKeyValues(meta2, obj2, keyColValues);
-        return new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumns, rel.getJoinedTableName()), keyColValues);
+        PreparedStatementQuery result = new PreparedStatementQuery(dialect.generateDeleteQuery(keyColumns, rel.getJoinedTableName()), keyColValues);
+        log.debug("Generated disconnect DELETE query:\n{}", result);
+        return result;
     }
 
     //returns the list of columns that are primary keys in given entity

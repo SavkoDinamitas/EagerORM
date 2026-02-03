@@ -14,4 +14,13 @@ import java.util.List;
 public class PreparedStatementQuery {
     String query;
     List<Literal> arguments;
+
+    public String toString(){
+        return """
+                Prepared statement:
+                %s
+                Arguments:
+                %s
+                """.formatted(query, arguments);
+    }
 }

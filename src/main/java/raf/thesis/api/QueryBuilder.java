@@ -1,5 +1,6 @@
 package raf.thesis.api;
 
+import lombok.extern.slf4j.Slf4j;
 import raf.thesis.metadata.internal.EntityMetadata;
 import raf.thesis.metadata.internal.RelationMetadata;
 import raf.thesis.metadata.internal.RelationType;
@@ -24,6 +25,7 @@ import java.util.stream.Stream;
  * Provides integration with {@link SubQueryBuilder} for constructing subquery expressions,
  * allowing the composition of complex queries.
  */
+@Slf4j
 public class QueryBuilder {
     protected final SelectNode rootSelectNode;
 
@@ -219,6 +221,8 @@ public class QueryBuilder {
         //reset queryArguments in case there are multiple calls of same QB
         queryArguments = new ArrayList<>();
         String query = build(dialect);
+        //log generated query
+        log.debug("Generated select query:\n{}\nParameters:\n{}", query, queryArguments);
         return new PreparedStatementQuery(query, Collections.unmodifiableList(queryArguments));
     }
 
