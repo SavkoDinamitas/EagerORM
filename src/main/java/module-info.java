@@ -1,5 +1,5 @@
 module EagerORM {
-    requires java.sql;
+    requires transitive java.sql;
     requires static lombok;
     requires org.reflections;
     requires org.slf4j;
@@ -11,4 +11,5 @@ module EagerORM {
     exports raf.thesis.query.exceptions;
     exports raf.thesis.metadata.exception;
     exports raf.thesis.mapper.exceptions;
+    exports raf.thesis.query.internal.tree;
 }
