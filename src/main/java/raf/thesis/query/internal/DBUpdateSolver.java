@@ -35,8 +35,6 @@ public class DBUpdateSolver {
      * If PK is marked as generated, it will always be skipped in query generation.
      * */
     public PreparedStatementQuery generateInsert(Object obj) {
-        List<PreparedStatementQuery> queries = new ArrayList<>();
-
         EntityMetadata meta = MetadataStorage.get(obj.getClass());
         if (meta == null)
             throw new EntityObjectRequiredException("Object: " + obj + " is not an entity!");
