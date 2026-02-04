@@ -17,14 +17,12 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.savkodinamitas</groupId>
     <artifactId>EagerORM</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <name>EagerORM</name>
     <description>Predictable object-relationship mapper with query builder</description>
@@ -39,10 +37,11 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/SavkoDinamitas/EagerORM.git</connection>
-        <developerConnection>scm:git:ssh://github.com:SavkoDinamitas/EagerORM.git</developerConnection>
+        <connection>scm:git:https://github.com/SavkoDinamitas/EagerORM.git</connection>
+        <developerConnection>scm:git:https://github.com/SavkoDinamitas/EagerORM.git</developerConnection>
         <url>https://github.com/SavkoDinamitas/EagerORM</url>
-    </scm>
+      <tag>v1.0.0</tag>
+  </scm>
 
     <licenses>
         <license>
@@ -55,7 +54,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.42</version>
+            <version>${eagerorm.lombok.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -177,7 +176,24 @@
         </dependencies>
     </dependencyManagement>
 
+
+
     <build>
+        <resources>
+            <!-- Default resources -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Root files -->
+            <resource>
+                <directory>${project.basedir}</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>README.md</include>
+                    <include>COPYING</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <!-- Compiler Plugin -->
             <plugin>
@@ -191,7 +207,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.42</version>
+                            <version>${eagerorm.lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -233,10 +249,89 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
             </plugin>
+            <!-- Publishing Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.8</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <configuration>
+                    <excludePackageNames>*.internal.*</excludePackageNames>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Source Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Release Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <projectVersionPolicyId>SemVerMinorDevelopment</projectVersionPolicyId>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <releaseProfiles>release</releaseProfiles>
+                </configuration>
+            </plugin>
+            <!-- Sonatype Central Plugin -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.9.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
         </plugins>
+
     </build>
 
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <gpg.skip>false</gpg.skip>
+            </properties>
+        </profile>
+    </profiles>
     <properties>
+        <gpg.skip>true</gpg.skip>
+        <eagerorm.lombok.version>1.18.42</eagerorm.lombok.version>
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
