@@ -4,16 +4,16 @@
   ~ Copyright (C) 2026  Dimitrije Andžić <dimitrije.andzic@gmail.com>
   ~
   ~ This program is free software: you can redistribute it and/or modify
-  ~ it under the terms of the GNU Affero General Public License as published by
+  ~ it under the terms of the GNU General Public License as published by
   ~ the Free Software Foundation, either version 3 of the License, or
   ~ (at your option) any later version.
   ~
   ~ This program is distributed in the hope that it will be useful,
   ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
   ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  ~ GNU Affero General Public License for more details.
+  ~ GNU General Public License for more details.
   ~
-  ~ You should have received a copy of the GNU Affero General Public License
+  ~ You should have received a copy of the GNU General Public License
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
@@ -22,9 +22,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>raf.thesis</groupId>
+    <groupId>io.github.savkodinamitas</groupId>
     <artifactId>EagerORM</artifactId>
     <version>1.0.0</version>
+
+    <name>EagerORM</name>
+    <description>Predictable object-relationship mapper with query builder</description>
+    <url>https://github.com/SavkoDinamitas/EagerORM</url>
+
+    <developers>
+        <developer>
+            <name>Dimitrije Andžić</name>
+            <email>dimitrije.andzic@gmail.com</email>
+            <url>https://github.com/SavkoDinamitas</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/SavkoDinamitas/EagerORM.git</connection>
+        <developerConnection>scm:git:ssh://github.com:SavkoDinamitas/EagerORM.git</developerConnection>
+        <url>https://github.com/SavkoDinamitas/EagerORM</url>
+    </scm>
 
     <licenses>
         <license>
@@ -186,12 +204,12 @@
                 <version>3.0.0-M9</version>
                 <configuration>
                     <argLine>
-                        --add-opens EagerORM/raf.thesis.metadata.internal.storage=ALL-UNNAMED
-                        --add-opens EagerORM/raf.thesis.metadata.internal.scan=ALL-UNNAMED
-                        --add-opens EagerORM/raf.thesis.metadata.internal=ALL-UNNAMED
-                        --add-opens EagerORM/raf.thesis.mapper.internal=ALL-UNNAMED
-                        --add-opens EagerORM/raf.thesis.query.internal.tree=ALL-UNNAMED
-                        --add-opens EagerORM/raf.thesis.query.internal=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.metadata.internal.storage=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.metadata.internal.scan=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.metadata.internal=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.mapper.internal=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.query.internal.tree=ALL-UNNAMED
+                        --add-opens EagerORM/io.github.savkodinamitas.query.internal=ALL-UNNAMED
                         --add-opens EagerORM/util.multidb=ALL-UNNAMED
                         --add-opens EagerORM/util=ALL-UNNAMED
                         --add-opens EagerORM/domain.hr=ALL-UNNAMED
