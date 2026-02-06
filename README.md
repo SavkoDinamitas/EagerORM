@@ -31,17 +31,25 @@ Transaction and connection scoping are supported to allow controlled unit-of-wor
 
 ## Import library
 Add EagerORM dependency to your project:
-```
-# Maven
+### Maven:
+```xml
 <dependency>
     <groupId>io.github.savkodinamitas</groupId>
     <artifactId>EagerORM</artifactId>
     <version>1.0.0</version>
 </dependency>
-
-# Gradle
+```
+### Gradle
+```
 implementation 'io.github.savkodinamitas:EagerORM:1.0.0'
 ```
+For Module users, inside `module-info.java` add:
+```java
+requires EagerORM;
+open package_names;
+```
+where `package_names` are packages that contain entity marked classes.
+This is needed for metadata scan to work.
 
 ---
 ## Annotate Entities and Plain Data Objects
