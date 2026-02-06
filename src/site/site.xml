@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ EagerORM - A predictable object-relation mapper
+  ~ Copyright (C) 2026  Dimitrije Andžić <dimitrije.andzic@gmail.com>
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<project name="EagerORM"
+         xmlns="http://maven.apache.org/DECORATION/1.8.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 https://maven.apache.org/xsd/decoration-1.8.0.xsd">
+
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>2.0.0-M9</version>
+    </skin>
+
+    <bannerLeft>
+        <name>EagerORM</name>
+        <src>images/logo.svg</src>
+        <href>index.html</href>
+    </bannerLeft>
+
+    <body>
+        <menu name="Documentation">
+            <item name="Home" href="index.html"/>
+            <item name="Usage" href="usage.html"/>
+            <item name="Javadoc" href="apidocs/index.html"/>
+            <item name="License" href="licenses.html"/>
+        </menu>
+
+    </body>
+</project>
+

@@ -46,7 +46,7 @@
     <licenses>
         <license>
             <name>GNU General Public License, Version 3</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+            <url>COPYING</url>
         </license>
     </licenses>
 
@@ -176,7 +176,18 @@
         </dependencies>
     </dependencyManagement>
 
-
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourcepath>${project.build.sourceDirectory}</sourcepath>
+                    <excludePackageNames>*.internal:*.internal.*</excludePackageNames>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <build>
         <resources>
@@ -318,6 +329,12 @@
                     <autoPublish>true</autoPublish>
                     <waitUntil>published</waitUntil>
                 </configuration>
+            </plugin>
+            <!-- Maven Site Plugins -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.21.0</version>
             </plugin>
         </plugins>
 

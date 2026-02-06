@@ -1,0 +1,33 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-tags: 'true'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 22
+      - run: mvn versions:set -DnewVersion="$(git tag --sort=v:refname -l 'v*' | tail -n 1 | sed s/v//)"
+      - run: mvn clean site
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: target/site
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
