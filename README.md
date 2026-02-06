@@ -1,4 +1,5 @@
 # EagerORM
+[![MvnRepository](https://badges.mvnrepository.com/badge/io.github.savkodinamitas/EagerORM/badge.svg?label=MvnRepository&color=green)](https://mvnrepository.com/artifact/io.github.savkodinamitas/EagerORM)
 
 EagerORM is a lightweight object–relational mapper focused on explicit, predictable data access.
 It maps plain Java objects to database tables using simple annotations and provides a fluent API for building SQL queries.
@@ -50,6 +51,11 @@ open package_names;
 ```
 where `package_names` are packages that contain entity marked classes.
 This is needed for metadata scan to work.
+
+---
+
+## Documentation
+[link](https://savkodinamitas.github.io/EagerORM/apidocs/EagerORM/module-summary.html)
 
 ---
 ## Annotate Entities and Plain Data Objects
